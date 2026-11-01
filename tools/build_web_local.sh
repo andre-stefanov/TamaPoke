@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
-FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
+ENV_NAME="local"
 VERSION="1.36.0-gen3-local"
 CHECK_ONLY=0
 
@@ -16,34 +16,41 @@ if [[ $# -ne 0 ]]; then
   echo "Usage: bash tools/build_web_local.sh [--check]" >&2
   exit 2
 fi
-if ! grep -Eq '^#define DEX_COUNT 386$' dex.h; then
-  echo "Refusing local build: dex.h must contain exactly 386 species." >&2
+if ! grep -Eq '^#define DEX_COUNT 386$' include/dex.h; then
+  echo "Refusing local build: include/dex.h must contain exactly 386 species." >&2
   exit 1
 fi
-if ! grep -q '#define FW_VERSION "1.36.0-gen3-local"' TamaPoke.ino; then
+if ! grep -q '#define FW_VERSION "1.36.0-gen3-local"' src/main.cpp; then
   echo "Refusing local build: local firmware version does not match $VERSION." >&2
+  exit 1
+fi
+
+# boot_app0.bin ships inside the Arduino core, not in the PlatformIO build dir.
+PIO_CORE="${PLATFORMIO_CORE_DIR:-$HOME/.platformio}"
+BOOT_APP0_SRC="$PIO_CORE/packages/framework-arduinoespressif32/tools/partitions/boot_app0.bin"
+if [[ ! -f $BOOT_APP0_SRC ]]; then
+  echo "Refusing local build: $BOOT_APP0_SRC not found." >&2
   exit 1
 fi
 
 STAGE="$(mktemp -d "${TMPDIR:-/tmp}/tamapoke-local.XXXXXX")"
 trap 'rm -rf "$STAGE"' EXIT
-mkdir -p "$STAGE/build" "$STAGE/firmware"
+mkdir -p "$STAGE/firmware"
 
-echo "Compiling local Gen-3 candidate..."
-arduino-cli compile --fqbn "$FQBN" \
-  --build-property compiler.cpp.extra_flags=-DTAMAPOKE_LOCAL_TEST \
-  --build-path "$STAGE/build" --export-binaries .
+echo "Building the local Gen-3 candidate with PlatformIO (env: $ENV_NAME)..."
+pio run -e "$ENV_NAME"
 
-cp "$STAGE/build/TamaPoke.ino.bootloader.bin" "$STAGE/firmware/tamapoke-$VERSION-bootloader.bin"
-cp "$STAGE/build/TamaPoke.ino.partitions.bin" "$STAGE/firmware/tamapoke-$VERSION-partitions.bin"
-cp "$STAGE/build/boot_app0.bin" "$STAGE/firmware/tamapoke-$VERSION-boot_app0.bin"
-cp "$STAGE/build/TamaPoke.ino.bin" "$STAGE/firmware/tamapoke-$VERSION-app.bin"
+BUILD_DIR=".pio/build/$ENV_NAME"
+cp "$BUILD_DIR/bootloader.bin" "$STAGE/firmware/tamapoke-$VERSION-bootloader.bin"
+cp "$BUILD_DIR/partitions.bin" "$STAGE/firmware/tamapoke-$VERSION-partitions.bin"
+cp "$BOOT_APP0_SRC" "$STAGE/firmware/tamapoke-$VERSION-boot_app0.bin"
+cp "$BUILD_DIR/firmware.bin" "$STAGE/firmware/tamapoke-$VERSION-app.bin"
 
 echo "Packing local Gen-3 sprite update..."
 python3 tools/pack_bundle.py --gen3 --output "$STAGE/sprites-gen3-update.pak"
 
 python3 tools/validate_web_build.py \
-  --dex-header dex.h --app "$STAGE/firmware/tamapoke-$VERSION-app.bin" \
+  --dex-header include/dex.h --app "$STAGE/firmware/tamapoke-$VERSION-app.bin" \
   --pak web/sprites.pak --manifest web/manifest-local.json \
   --expected-version "$VERSION" --expected-dex 386 --expected-files 503 --expected-thumbs 251
 python3 tools/validate_web_build.py \

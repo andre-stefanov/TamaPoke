@@ -8,15 +8,18 @@ This repository is a heavily extended, community-oriented firmware for
 the Waveshare ESP32-S3 Touch AMOLED 1.75. It is a fork of
 `socquique/TamaPoke` and is maintained as the "Expanded" variant.
 
-- Firmware entry point: `TamaPoke.ino`
+- Firmware entry point: `src/main.cpp` (PlatformIO project)
 - Baseline firmware state: `1.32.1-caught-mark`
 - Local Gen-3/watermark/step test: `1.36.0-gen3-local` (via `TAMAPOKE_LOCAL_TEST`)
 - Public Gen-3 release: `1.36.0` (via
   `TAMAPOKE_GEN3_RELEASE`, without local debug commands)
 - Board: ESP32-S3, 16 MB flash, OPI PSRAM, round 466x466 AMOLED, CST9217 touch,
   PCF85063 RTC, AXP2101 PMU, ES8311 audio
-- Validated toolchain: ESP32 core 3.3.10, Arduino_GFX 1.6.7,
-  SensorLib 0.4.1 and XPowersLib 0.3.3.
+- Build: PlatformIO with the pioarduino platform `55.03.311` (ESP32 Arduino
+  core `3.3.11`). The firmware was originally validated with core `3.3.10`
+  under the Arduino IDE/`arduino-cli`; the project no longer ships a sketch.
+- Libraries: GFX Library for Arduino `1.6.7`, SensorLib `0.4.1` and
+  XPowersLib `0.3.3` (pinned in `platformio.ini`).
 - Languages: DE, EN, ES, FR, IT, PT. For font reasons, code and UI texts
   largely use ASCII without umlauts/accents.
 
@@ -70,7 +73,7 @@ For hardware tests `web/dev.html` and
 `web/manifest-local.json` still exist; these debug files are deliberately not
 part of the public installation flow.
 
-Current local test guards in `TamaPoke.ino`:
+Current local test guards in `src/main.cpp`:
 
 - `TAMAPOKE_LOCAL_TEST` sets the display version to `1.36.0-gen3-local`.
 - `TAMAPOKE_GEN3_RELEASE` sets the display version to `1.36.0` and allows the
@@ -296,22 +299,28 @@ debug state; `1.36.0` is the published debug-free Gen-3 release.
 
 ## Architecture and Important Files
 
-- `TamaPoke.ino`: UI, touch routing, rendering, cards, minigames, battle screen,
-  settings, help, local runtime state, IMU poll and morning overlay.
-- `dayphase.h`: hour, phase and visual night from the RTC epoch.
-- `imu.h` / `imu.cpp`: QMI8658 poll, shake edge, pedometer delta.
-- `pet.h` / `pet.cpp`: persistent pet model, NVS save/load, care,
+- `platformio.ini`: PlatformIO environments `release` and `local`, the pinned
+  pioarduino platform, library versions and the partition table.
+- `boards/tamapoke_esp32s3.json`: board definition (16 MB flash, OPI PSRAM,
+  USB CDC on boot).
+- `src/main.cpp`: UI, touch routing, rendering, cards, minigames, battle screen,
+  settings, help, local runtime state, IMU poll and morning overlay. Unlike the
+  former sketch it declares every function prototype explicitly.
+- `include/dayphase.h`: hour, phase and visual night from the RTC epoch.
+- `include/imu.h` / `src/imu.cpp`: QMI8658 poll, shake edge, pedometer delta.
+- `include/pet.h` / `src/pet.cpp`: persistent pet model, NVS save/load, care,
   progression, pokedex, catching, events, expedition and items.
-- `battle.h` / `battle.cpp`: testable battle logic and type multipliers.
-- `audio.h` / `audio.cpp`: sound queue, ES8311, SFX and species cries.
-- `species_chirp.h` / `species_chirp.cpp`: legally unproblematic synthesis profiles
-  generated per dex number.
-- `i18n.h` / `i18n.cpp`: all visible UI texts and dex names.
-- `time_utils.h`: rollover-safe `deadlineActive`, `deadlineReached` and
+- `include/battle.h` / `src/battle.cpp`: testable battle logic and type
+  multipliers.
+- `include/audio.h` / `src/audio.cpp`: sound queue, ES8311, SFX and species cries.
+- `include/species_chirp.h` / `src/species_chirp.cpp`: legally unproblematic
+  synthesis profiles generated per dex number.
+- `include/i18n.h` / `src/i18n.cpp`: all visible UI texts and dex names.
+- `include/time_utils.h`: rollover-safe `deadlineActive`, `deadlineReached` and
   `deadlineRemaining` for `millis()` timers.
 - `tests/pet_tests.cpp` and `tests/battle_tests.cpp`: native regression tests.
-- `tools/build_web.sh`: produces the four separate public Gen-3
-  installer binaries.
+- `tools/build_web.sh`: builds the `release` environment with PlatformIO and
+  produces the four separate public Gen-3 installer binaries.
 - `tools/build_web_gen3.sh`: produces and validates the debug-free
   `1.36.0` release without using the local debug build.
 - `web/manifest.json` and `web/index.html`: web installer. The parts are
@@ -327,7 +336,9 @@ Run in the repository folder (`TamaPoke`):
 
 ```bash
 cd tests && make clean && make test
-cd .. && bash tools/build_web.sh
+cd .. && pio run -e release
+pio run -e local
+bash tools/build_web.sh
 python3 -m http.server 8000 --directory web
 ```
 
@@ -383,10 +394,11 @@ The public page `web/index.html` has the same normal flow.
 ## Verification Before Any Publication
 
 1. `cd tests && make clean && make test`
-2. `bash tools/build_web.sh --check`, `bash tools/build_web_local.sh --check`
+2. `pio run -e release` and `pio run -e local`
+3. `bash tools/build_web.sh --check`, `bash tools/build_web_local.sh --check`
    and `bash tools/build_web_gen3.sh --check`
-3. `git diff --check`
-4. Hardware smoke test without erase:
+4. `git diff --check`
+5. Hardware smoke test without erase:
    - Save/pet is preserved.
    - Tap the main-screen pet several times: the cry must be clearly audible.
    - Open the profile: cycle through six visible corner/accent frames; check
@@ -396,7 +408,7 @@ The public page `web/index.html` has the same normal flow.
    - In the local test build check `TESTMON`, `TESTEVO`, `CAUGHT <dex>` and
      `BATTLE <dex>`; in the public build these debug commands are deliberately
      not present.
-5. Only commit/push/publish after explicit user approval.
+6. Only commit/push/publish after explicit user approval.
 
 ## Open Topics and Safe Next Steps
 

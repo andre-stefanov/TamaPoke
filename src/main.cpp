@@ -1,11 +1,15 @@
 // TamaPoke - tamagotchi pixel art inspired by gen 1
 // for Waveshare ESP32-S3-Touch-AMOLED-1.75
 //
-// Libraries (Library Manager or the Waveshare repo):
+// PlatformIO project: run `pio run -e release` for the public build and
+// `pio run -e local` for the debug build. Libraries, board settings, flash
+// layout and build flags live in platformio.ini and boards/.
+//
+// Libraries:
 //   - "GFX Library for Arduino" (moononournation), with CO5300 QSPI support
 //   - "SensorLib" (Lewis He), CST9217 touch driver
 //
-// Board: ESP32S3 Dev Module | Flash 16MB | PSRAM: OPI PSRAM | USB CDC On Boot: Enabled
+// Board: ESP32-S3, 16 MB flash, OPI PSRAM, USB CDC on boot.
 //
 // Sprites and the species table are generated with tools/sprites.py (emit).
 
@@ -210,6 +214,211 @@ void startBattleWith(int16_t forcedDex, uint8_t forcedLevel, int8_t forcedShiny 
 void startBattle();
 
 // the 9 species with their own sprite in flash (SD-less fallback): dex -> index
+// Prototypes for every function below. Arduino sketches get these from the
+// .ino preprocessor; a plain C++ translation unit needs them explicitly.
+
+int flashIdxForDex(int16_t dex);
+void loadPowerSave();
+void setPowerSave(bool on);
+void touchIsr();
+void markUiDirty();
+void lockTouchBrief(uint16_t ms = 160);
+const char *screenName();
+bool staticScreenClean();
+void setup();
+void ensureMon();
+bool mainScreenReadyForAmbientSound();
+void maybePlayAmbientSound(uint32_t now);
+uint16_t renderIntervalMs();
+bool lightSleepAllowed(uint32_t now);
+uint16_t lightSleepMs(uint32_t now);
+void maybeLightSleep(uint32_t now);
+void loop();
+void updateBrightness(uint32_t now);
+void handleSerial();
+bool inPetZone(int16_t x, int16_t y);
+bool inProfilePetPortrait(int16_t x, int16_t y);
+void handleTouch();
+void onSwipeV(int dir);
+void onSwipe(int dir);
+int8_t gameMenuHit(int16_t x, int16_t y);
+void startGameMenuChoice(uint8_t idx);
+void onTap(int16_t x, int16_t y);
+uint16_t inkColor();
+uint16_t lerp565(uint16_t a, uint16_t b, int i, int n);
+static uint8_t watermarkSlot();
+bool watermarkNeedsRedraw();
+static uint16_t watermarkPixel(uint16_t base);
+static void drawWatermark(uint8_t slot);
+void flushStampedFrame();
+int sceneHour();
+uint8_t currentDayPhase();
+StrId dayPhaseTextId(uint8_t phase);
+void drawClouds(uint32_t now, uint16_t col);
+void drawScene(uint8_t biome, uint32_t now, bool night);
+void renderStarterRegionSelect();
+void renderStarterSelect();
+void render();
+void drawGameMenu();
+void startGame();
+void spawnCatchTarget();
+void startCatchGame();
+void startMemoRound();
+void startMemoGame();
+void spawnCleanSpot();
+void startCleanGame();
+void nextTypeQuestion();
+void startTypeGame();
+void respawnBall();
+int ballHitRadius();
+void gameTap(int16_t x, int16_t y);
+void finishCatchGame();
+void catchTap(int16_t x, int16_t y);
+void finishMemoGame();
+int memoPadAt(int16_t x, int16_t y);
+void memoPadSound(uint8_t pad);
+void memoTap(int16_t x, int16_t y);
+void finishCleanGame();
+void cleanTap(int16_t x, int16_t y);
+void finishTypeGame();
+void typeTap(int16_t x, int16_t y);
+void stepGame();
+void startSack();
+void sackTap();
+void renderSack();
+void drawGameScene();
+void drawGameResult(const char *recordFmt, uint16_t record, StrId gainFmt);
+void renderCatchGame();
+void stepMemoGame();
+void renderMemoGame();
+void renderCleanGame();
+void renderTypeGame();
+void renderGame();
+uint16_t battleHpFor(const BattleStats &stats);
+BattleStats petBattleStats();
+void scheduleNextWild(uint32_t now);
+bool mainScreenReadyForWild();
+void maybeOfferWildEncounter(uint32_t now);
+void scheduleNextPetEvent(uint32_t now);
+bool mainScreenReadyForPetEvent();
+void maybeOfferPetEvent(uint32_t now);
+bool inPetEventHit(int16_t x, int16_t y);
+void acceptPetEvent();
+bool mainScreenReadyForShake();
+void maybeOfferMorning(uint32_t now);
+void closeBattle();
+void startBattleWith(int16_t forcedDex, uint8_t forcedLevel, int8_t forcedShiny);
+void startBattle();
+void finishBattle();
+void performBattleAction(BattleAction action);
+void battleTap(int16_t x, int16_t y);
+void drawBattleHpBar(int x, int y, uint16_t cur, uint16_t maxHp, uint16_t color);
+void battleRewardText(char *buf, size_t len);
+void drawBattleButtonLabel(int x, int y, int w, const char *label);
+const char *battleTypeName(uint8_t type);
+uint16_t battleTypeColor(uint8_t type);
+void typeText(char *buf, size_t len, const DexEntry &d);
+int typeChipWidth(uint8_t type);
+void drawTypeChip(int x, int y, uint8_t type);
+int drawTypeChips(int x, int y, const DexEntry &d, bool alignRight);
+void drawWildPrompt();
+void drawPetEvent();
+void renderBattle();
+void drawCardStat(int y, const char *label, uint16_t val, uint16_t maxBar, uint16_t color);
+void openClock();
+void applyClock();
+void drawClockBtn(int x, int y, const char *l);
+const char *soundModeLabel();
+uint8_t nextSoundMode();
+const char *powerSaveLabel();
+void drawStatusLine(int y, const char *label, const char *value, uint16_t valueColor);
+void renderHelp();
+void openHelp();
+void helpTap(int16_t x, int16_t y);
+void renderClock();
+void clockTap(int16_t x, int16_t y);
+void drawStreakBadge();
+void drawCelebration();
+uint16_t collectionFrameColor(uint8_t frame);
+void drawCaughtBattleMarker(int x, int y);
+static void drawFrameCorner(int x, int y, int sx, int sy, uint16_t color, uint8_t len);
+void drawCollectionFrame(uint8_t frame);
+void drawMedalBadge(int x, int y, int i);
+void renderCardProfile();
+StrId personalityNameId(PetPersonality p);
+StrId personalityHintId(PetPersonality p);
+uint16_t personalityColor(PetPersonality p);
+void drawPersonalityRecord(int x, int y, const char *label, uint16_t val, uint16_t color);
+void renderCardPersonality();
+StrId dailyGoalLabelId(uint8_t goalType);
+uint16_t dailyGoalColor(uint8_t goalType);
+void drawDailyGoalRow(int y, uint8_t idx);
+void renderCardDaily();
+bool boxComesBefore(int16_t a, int16_t b);
+uint16_t boxBuildList(int16_t *out);
+uint8_t boxPageCount();
+int16_t boxDexAt(uint16_t index);
+const char *boxSortLabel();
+void renderCardBox();
+void renderCardStats();
+void renderCardMedals();
+void renderCardProgress();
+StrId stepRewardTextId(uint8_t index);
+void renderCardSteps();
+StrId expeditionItemText(ExpeditionItem item);
+uint16_t expeditionItemColor(ExpeditionItem item);
+uint32_t expeditionNowEpoch();
+bool inStepsHudHit(int16_t x, int16_t y);
+void openStepsCard();
+void drawStepsHud();
+bool expeditionHudVisible();
+bool inExpeditionHudHit(int16_t x, int16_t y);
+void openExpeditionCard();
+void drawExpeditionHud();
+void drawExpeditionItem(int x, int y, ExpeditionItem item);
+void renderExpeditionTrainChoice();
+void renderCardExpedition();
+int8_t expeditionItemAt(int16_t x, int16_t y);
+void expeditionCardTap(int16_t x, int16_t y);
+void renderCard();
+void openKeyboard();
+void renderKeyboard();
+void keyboardTap(int16_t x, int16_t y);
+bool galleryDexVisible(int16_t dex);
+uint16_t galleryFilteredCount();
+int galleryPageCount();
+int16_t galleryDexAt(uint16_t index);
+void drawThumb(const uint8_t *b, int x, int y, int s, bool sil);
+void renderGallery();
+void galleryTap(int16_t x, int16_t y);
+void drawBattery();
+void drawHeader(const char *name, uint16_t nameColor, const char *msg);
+void drawCeremony();
+void drawChoiceDialog();
+void drawEvolveButton();
+void drawFarewellButton();
+void drawRunawayButton();
+void drawEvolveFX(uint32_t now);
+void drawPet();
+void startBath();
+void drawBath();
+uint32_t pmdActTotalMs(const PmdAct &a);
+uint8_t pmdFrameAt(const PmdAct &a, uint32_t t, bool loop);
+void drawPmdActM(PmdMon &m, uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS);
+void drawPmdAct(uint8_t actId, int cx, int groundY, uint32_t t, bool loop, bool sil, uint8_t maxS);
+void behNext();
+void drawPetPMD();
+void drawPetSD();
+void overlayEye(const Species &sp, int x, int y, int s, int col);
+void overlayMouth(const Species &sp, int x, int y, int s, bool open);
+void drawPoops();
+void drawBars();
+void drawBar(int x, int y, const char *label, uint8_t val);
+void drawButtons();
+const char *eggMsg();
+const char *statusMsg();
+void drawMap(const char *const *map, int n, int x, int y, int s, bool silhouette);
+
 int flashIdxForDex(int16_t dex) {
   static const int8_t IDX[10] = { -1, 3, 4, 5, 0, 1, 2, 6, 7, 8 };
   return (dex >= 1 && dex <= 9) ? IDX[dex] : -1;
@@ -315,7 +524,7 @@ void markUiDirty() {
   galleryDirty = true;
 }
 
-void lockTouchBrief(uint16_t ms = 160) {
+void lockTouchBrief(uint16_t ms) {
   uint32_t until = millis() + ms;
   if (until > ignoreTouchUntil) ignoreTouchUntil = until;
   wasPressed = false;

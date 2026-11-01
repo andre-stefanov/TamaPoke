@@ -1,6 +1,7 @@
 # build artifacts
 build/
 tests/build/
+.pio/
 
 # caches and regenerable workshop artifacts
 tools/downloads/

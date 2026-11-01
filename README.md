@@ -94,14 +94,31 @@ the separate `1.75C` is a different board.
 
 ## Developer builds
 
-Board profile:
+This is a [PlatformIO](https://platformio.org/) project. `platformio.ini` defines
+two environments:
+
+| Environment | Purpose | Version |
+|---|---|---|
+| `release` | public, debug-free Gen 3 build | `1.36.1` |
+| `local` | Gen-3 hardware/debug build | `1.36.0-gen3-local` |
 
 ```bash
-FQBN="esp32:esp32:esp32s3:CDCOnBoot=cdc,FlashSize=16M,PSRAM=opi,PartitionScheme=app3M_fat9M_16MB"
+pio run -e release             # build the public firmware
+pio run -e local               # build the debug firmware
+pio run -e release -t upload   # flash a connected board
+pio device monitor             # serial console
 ```
 
-Validated toolchain: ESP32 Arduino core `3.3.10`, GFX Library for Arduino
-`1.6.7`, SensorLib `0.4.1` and XPowersLib `0.3.3`.
+Sources live in `src/` (`src/main.cpp` is the firmware entry point), headers in
+`include/`. Board settings (16 MB flash, OPI PSRAM, USB CDC on boot) are in
+`boards/tamapoke_esp32s3.json`, the flash layout in
+`partitions/app3M_fat9M_16MB.csv`.
+
+The firmware needs an ESP32 Arduino core 3.x, which the official PlatformIO
+`espressif32` platform does not provide yet, so the project pins the
+[pioarduino](https://github.com/pioarduino/platform-espressif32) distribution
+(`55.03.311`, Arduino core `3.3.11`). Library versions are fixed to GFX Library
+for Arduino `1.6.7`, SensorLib `0.4.1` and XPowersLib `0.3.3`.
 
 Build and validate without replacing installer artifacts:
 
@@ -147,6 +164,8 @@ known-complete Gen‑2 card.
 ```bash
 cd tests && make clean && make test
 cd ..
+pio run -e release
+pio run -e local
 bash tools/build_web.sh --check
 bash tools/build_web_local.sh --check
 bash tools/build_web_gen2_legacy.sh --check

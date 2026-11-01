@@ -4,6 +4,9 @@ As of: 2026-09-07
 
 ## Current state
 
+- Build system: PlatformIO. `pio run -e release` (public) and
+  `pio run -e local` (debug) replace the former Arduino `.ino` sketch; sources
+  live in `src/`, headers in `include/`.
 - Active branch: `local/full-gen3`; rollback tag: `local-before-gen3`.
 - The tested Gen‑3 feature commit `da8bfa8` is already on `fork/main`.
 - The hosted installer serves public Gen 3 `1.36.0` with #1–386.

@@ -150,7 +150,7 @@ def main():
     c = Counter(rarities)
     print(f"bases: {c['R_COMUN']} comunes, {c['R_RARO']} raras, {c['R_LEGENDARIO']} legendarias, {c['R_EVO']} solo-evolucion")
 
-    path = os.path.join(os.path.dirname(__file__), '..', 'dex.h')
+    path = os.path.join(os.path.dirname(__file__), '..', 'include', 'dex.h')
     open(path, 'w').write(''.join(out))
     print(f"guardado {os.path.normpath(path)} ({len(DEX)} especies)")
 

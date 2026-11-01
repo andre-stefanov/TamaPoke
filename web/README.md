@@ -12,11 +12,12 @@ firmware-plus-sprites installation.
 
 ## Gen‑3 pages
 
-- `dev.html` + `manifest-local.json`: `1.36.0-gen3-local`, compiled with
-  `TAMAPOKE_LOCAL_TEST`. It includes click-driven Pokémon, evolution, battle,
-  IMU and step diagnostics.
+- `dev.html` + `manifest-local.json`: `1.36.0-gen3-local`, the PlatformIO
+  `local` environment compiled with `TAMAPOKE_LOCAL_TEST`. It includes
+  click-driven Pokémon, evolution, battle, IMU and step diagnostics.
 - `release-gen3.html` + `manifest-gen3.json`: local reference copy of the same
-  public-style `1.36.0` page, compiled with `TAMAPOKE_GEN3_RELEASE`.
+  public-style `1.36.0` page, the `release` environment compiled with
+  `TAMAPOKE_GEN3_RELEASE`.
 
 The release preview deliberately exposes only one sprite action. It transfers
 `sprites.pak` and then `sprites-gen3-update.pak`, giving every user the complete
@@ -38,13 +39,16 @@ the two-package sequence keeps every GitHub-hosted file below the limit.
 ## Build and validate
 
 ```bash
+pio run -e release                      # public firmware only
+pio run -e local                        # debug firmware only
 bash tools/build_web.sh --check         # current public Gen 3
 bash tools/build_web_local.sh --check   # Gen 3 debug
 bash tools/build_web_gen2_legacy.sh --check # pinned historical Gen 2
 ```
 
 Omit `--check` to refresh the current public Gen‑3 artifacts. The separate
-legacy Gen‑2 command is read-only and never modifies installer files.
+legacy Gen‑2 command is read-only and never modifies installer files; it builds
+the pinned commit from `c5d3ca6` with its own historical toolchain.
 
 Each build validates its firmware version, Dex count, package entry counts and
 thumbnail structure/count. The public Gen‑3 build also rejects binaries that
