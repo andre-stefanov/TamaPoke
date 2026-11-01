@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Empaqueta el conjunto estable #1–251 en web/sprites.pak para que el
-instalador público lo suba de un clic. Los conjuntos locales Gen-3 se generan
-con --gen3 o --gen3-full.
+"""Packs the stable #1-251 set into web/sprites.pak so that the
+public installer can upload it in one click. Local Gen-3 sets are generated
+with --gen3 or --gen3-full.
 
-Formato TPAK (little-endian):
+TPAK format (little-endian):
   char[4]  "TPAK"
   uint16   count
-  count x { uint8 nameLen; char name[nameLen]; uint32 size }   (indice)
-  ...datos de cada fichero, en el mismo orden...
+  count x { uint8 nameLen; char name[nameLen]; uint32 size }   (index)
+  ...data of each file, in the same order...
 
-El instalador (web/index.html) lo descarga, lo parte por el indice y manda cada
-fichero a la placa con el protocolo PUT (igual que tools/send_sd.py).
+The installer (web/index.html) downloads it, splits it by the index and sends
+each file to the board with the PUT protocol (same as tools/send_sd.py).
 
-Flags locales: --gen2 (161–251), --gen3 (252–386) y --gen3-full (1–386).
+Local flags: --gen2 (161-251), --gen3 (252-386) and --gen3-full (1-386).
 """
 import os
 import struct
@@ -60,7 +60,7 @@ def main():
         files.append(os.path.join(MONS, 'thumbs.bin'))
         out_path = output or GEN3_FULL_OUT
     else:
-        # The public installer is intentionally pinned to the stable #1–251
+        # The public installer is intentionally pinned to the stable #1-251
         # set. A local Gen-3 run may have extra files in this directory, so do
         # not use a broad glob here. The public thumbnail index is renamed in
         # the TPAK below to the firmware's expected mons/thumbs.bin path.

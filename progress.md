@@ -1,6 +1,6 @@
 # TamaPoke development progress
 
-Stand: 2026-09-07
+As of: 2026-09-07
 
 ## Current state
 

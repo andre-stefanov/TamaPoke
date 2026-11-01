@@ -70,9 +70,9 @@ void Pet::newEgg() {
   weight = 0;
   speciesId = -1;
   prevSpeciesId = -1;
-  eggTarget = pickEggSpecies();  // especie oculta segun rareza y pokedex
-  starterPick = (registeredCount() == 0);  // primera partida: el jugador elige inicial
-  // sorteo shiny: 1/48 base, mejor con despedida y con racha/vinculo altos
+  eggTarget = pickEggSpecies();  // hidden species based on rarity and pokedex
+  starterPick = (registeredCount() == 0);  // first run: the player picks a starter
+  // shiny roll: 1/48 base, better with farewell and high streak/bond
   int shinyBase = (lastEnd == CER_FAREWELL ? 24 : 48) - careBonus();
   if (shinyBase < 8) shinyBase = 8;
   eggShiny = (random(shinyBase) == 0);
@@ -93,9 +93,9 @@ void Pet::newEgg() {
   save();
 }
 
-// progresion offline: el tiempo paso aunque estuviera apagado, pero con
-// piedad — las barras bajan con suelo en 15 (vuelve hambriento, no muerto),
-// sin descuidos ni escapadas en ausencia
+// offline progression: time passed although it was off, but with
+// grace - the bars drop with a floor of 15 (comes back hungry, not dead),
+// with no care mistakes or runaways while absent
 static uint8_t dropTo(uint8_t v, uint8_t d, uint8_t fl) {
   if (v <= fl) return v;
   return (v - fl > d) ? v - d : fl;
@@ -104,7 +104,7 @@ static uint8_t dropTo(uint8_t v, uint8_t d, uint8_t fl) {
 void Pet::setClock(uint32_t nowEpoch) {
   lastSeenEpoch = nowEpoch;
   ensureStepDay();
-  if (nowEpoch) save();  // persiste ya: un corte de luz no pierde la referencia
+  if (nowEpoch) save();  // persist right away: a power cut does not lose the reference
 }
 
 void Pet::syncClock(uint32_t nowEpoch) {
@@ -114,18 +114,18 @@ void Pet::syncClock(uint32_t nowEpoch) {
   if (nowEpoch == 0) return;
   uint32_t mins = (seen && nowEpoch > seen) ? (nowEpoch - seen) / 60 : 0;
   if (mins < 2 || ceremony != CER_NONE) {
-    save();  // primera vez o sin tiempo que aplicar: solo persistir la hora
+    save();  // first time or no time to apply: only persist the clock
     return;
   }
-  if (mins > 14UL * 24 * 60) mins = 14UL * 24 * 60;  // tope: 2 semanas
+  if (mins > 14UL * 24 * 60) mins = 14UL * 24 * 60;  // cap: 2 weeks
 
   for (uint32_t i = 0; i < mins; i++) {
     ageMinutes++;
     if (isEgg()) {
-      if (ageMinutes >= 3) hatch();  // eclosiona en tu ausencia
+      if (ageMinutes >= 3) hatch();  // hatches in your absence
       continue;
     }
-    if (sleeping) {  // descanso: baja lento y con suelo, igual que en vivo
+    if (sleeping) {  // rest: drops slowly and with a floor, same as when live
       energy = clamp100(energy + 6);
       if (ageMinutes % 2 == 0) {
         fullness = dropTo(fullness, 1, 30);
@@ -141,12 +141,12 @@ void Pet::syncClock(uint32_t nowEpoch) {
     joy = dropTo(joy, 1, 15);
   }
   if (!isEgg()) {
-    if (!sleeping) {  // durmiendo no ensucia
+    if (!sleeping) {  // no mess while sleeping
       uint8_t p = poops + mins / 240;
       poops = p > 3 ? 3 : p;
     }
-    // la evolucion NO se aplica offline: queda lista y la dispara el usuario
-    // tocando al bicho cuando vuelve (para que vea la transformacion)
+    // evolution is NOT applied offline: it stays ready and the user triggers it
+    // touching the pet when back (so they see the transformation)
   }
   Serial.printf("offline: %u min aplicados (nv.%u)\n", mins, level());
   save();
@@ -154,7 +154,7 @@ void Pet::syncClock(uint32_t nowEpoch) {
 
 bool Pet::update(uint32_t nowMs) {
   ensureStepDay();
-  // fin de ceremonia: la criatura se va y queda un huevo nuevo
+  // end of ceremony: the pet leaves and a new egg remains
   if (ceremony != CER_NONE && deadlineReached(millis(), ceremonyUntil)) {
     newEgg();
     return true;
@@ -169,43 +169,43 @@ bool Pet::update(uint32_t nowMs) {
 }
 
 void Pet::tick() {
-  if (ceremony != CER_NONE) return;  // el tiempo se detiene en la despedida
+  if (ceremony != CER_NONE) return;  // time stops during the farewell
   ageMinutes++;
 
   if (isEgg()) {
-    if (ageMinutes >= 3) hatch();  // si no lo tocas, eclosiona solo a los 3 min
+    if (ageMinutes >= 3) hatch();  // if untouched, it hatches on its own after 3 min
     return;
   }
 
-  // el sueño es descanso: la energia se recupera y las necesidades bajan MUCHO
-  // mas lento que despierto y con suelo (amanece pidiendo algo de mimo, no a
-  // cero, sin descuidos ni escapadas). despierto: comida -2/min, hig/joy -1/min.
-  // El peso aun se quema; la racha de buen cuidado (goodTicks) queda en pausa.
+  // sleep is rest: energy recovers and needs drop MUCH
+  // slower than awake and with a floor (wakes up asking for some affection, not at
+  // zero, without care mistakes or runaways). awake: food -2/min, hyg/joy -1/min.
+  // Weight still burns off; the good care streak (goodTicks) is paused.
   if (sleeping) {
     energy = clamp100(energy + 6);
     if (weight > 0 && ageMinutes % 3 == 0) weight--;
-    if (ageMinutes % 2 == 0) {                 // ~4x mas lento que despierto
+    if (ageMinutes % 2 == 0) {                 // ~4x slower than awake
       fullness = dropTo(fullness, 1, 30);
       joy = dropTo(joy, 1, 35);
     }
     if (ageMinutes % 3 == 0) hygiene = dropTo(hygiene, 1, 45);
-    checkMedals();  // aun puede cruzar un nivel por edad mientras duerme
+    checkMedals();  // can still cross a level by age while sleeping
     if (++ticksSinceSave >= 5) pendingSave = true;
     return;
   }
 
-  if (ageMinutes % MINUTES_PER_LEVEL == 0) sfxPlay(SFX_LEVEL);  // subio de nivel (despierto)
+  if (ageMinutes % MINUTES_PER_LEVEL == 0) sfxPlay(SFX_LEVEL);  // level up (awake)
 
   fullness = clamp100(fullness - nightFoodDrop(lastSeenEpoch));
   energy = clamp100(energy - 1);
   if (fullness > 40 && poops < 3 && random(100) < 15) poops++;
 
   hygiene = clamp100(hygiene - 1 - 4 * poops);
-  // el sobrepeso da pereza: la energia cae el doble
+  // excess weight makes it sluggish: energy drops twice as fast
   if (weight > 50) energy = clamp100(energy - 1);
   if (weight > 0 && ageMinutes % 3 == 0) weight--;
 
-  // la disciplina forja la defensa: 12 h seguidas bien cuidado = +1 DEF
+  // discipline forges defense: 12 h in a row well cared = +1 DEF
   if (lowestStat() >= 40) {
     if (++goodTicks >= 720) {
       goodTicks = 0;
@@ -220,35 +220,35 @@ void Pet::tick() {
   if (hygiene < 30) dJoy -= 2;
   joy = clamp100(joy + dJoy);
 
-  // Descuido: dejar una estadistica por los suelos cuenta como error de
-  // cuidado (con enfriamiento para no contar el mismo descuido cada minuto)
+  // Care mistake: leaving a stat at rock bottom counts as a care
+  // mistake (with cooldown so the same mistake is not counted every minute)
   if (mistakeCooldown > 0) mistakeCooldown--;
   if (lowestStat() <= 10 && mistakeCooldown == 0) {
     careMistakes++;
     mistakeCooldown = 30;
-    if (bond > 3) bond -= 3;  // el descuido enfria el vinculo
+    if (bond > 3) bond -= 3;  // neglect cools the bond
   }
 
-  checkMedals();  // la evolucion la dispara el usuario (canEvolveNow + tap), no el tick
+  checkMedals();  // the user triggers evolution (canEvolveNow + tap), not the tick
 
-  // abandono total: con TODO a cero durante una hora queda lista para escaparse;
-  // NO se va sola, la dispara el usuario con el boton (final triste, lo presencia)
+  // total neglect: with EVERYTHING at zero for an hour it is ready to run away;
+  // it does NOT leave alone: the user triggers it by button (sad, they witness it)
   if (fullness == 0 && joy == 0 && energy == 0 && hygiene == 0) {
     if (neglectTicks < RUNAWAY_TICKS) neglectTicks++;
   } else {
-    neglectTicks = 0;  // un solo cuidado la salva
+    neglectTicks = 0;  // a single care saves it
   }
 
-  // ciclo completo (forma final + 7 dias): la despedida NO salta sola; queda
-  // lista (canFarewellNow) y la dispara el usuario con el boton, para que la vea
+  // full cycle (final form + 7 days): the farewell does NOT fire by itself; it stays
+  // ready (canFarewellNow) and the user triggers it with the button, so they see it
 
-  // autoguardado periodico: NO escribir a flash aqui (corre dentro del loop,
-  // mientras se anima); solo marcar y dejar que el loop lo vuelque al atenuar
+  // periodic autosave: do NOT write to flash here (runs inside the loop,
+  // while animating); only mark and let the loop flush it when dimming
   if (++ticksSinceSave >= 5) pendingSave = true;
 }
 
-// vuelca el guardado periodico pendiente (lo llama el loop en un momento sin
-// animacion para que el paron de la escritura a flash no se vea)
+// flushes the pending periodic save (the loop calls it at a moment without
+// animation so the flash write stall is not visible)
 void Pet::flushSave() {
   if (pendingSave) save();
 }
@@ -279,8 +279,8 @@ bool Pet::hasEvolutionPath(int16_t dex) const {
   return false;
 }
 
-// Quedan miembros sin registrar en la linea evolutiva de esta base? Se hace
-// un pequeno recorrido por el grafo para cubrir ramas (Eevee, Tyrogue, etc.).
+// Are there unregistered members in the evolution line of this base? A small
+// walk over the graph is done to cover branches (Eevee, Tyrogue, etc.).
 bool Pet::lineHasUnregistered(int16_t base) const {
   int16_t pending[12];
   uint8_t pendingCount = 0;
@@ -304,10 +304,10 @@ uint8_t Pet::eggRarity() const {
   return (eggTarget >= 1 && eggTarget <= DEX_COUNT) ? DEX_TBL[eggTarget].rarity : R_COMUN;
 }
 
-// elige la especie del huevo: tirada de rareza (mejorada por una despedida
-// completa, castigada por una escapada) y sesgo hacia lineas incompletas
+// picks the egg species: rarity roll (improved by a complete
+// farewell, penalized by a runaway) and bias towards incomplete lines
 int16_t Pet::pickEggSpecies() {
-  // primera partida: inicial clasico
+  // first run: classic starter
   if (registeredCount() == 0) {
     return CLASSIC_DEX[random(NUM_CLASSIC_DEX)];
   }
@@ -322,8 +322,8 @@ int16_t Pet::pickEggSpecies() {
     else if (r < leg + rare) tier = R_RARO;
   }
 
-  // candidatos del tier con linea incompleta; si no hay, baja de tier;
-  // si la pokedex del tier esta completa, vale cualquiera del tier
+  // tier candidates with an incomplete line; if none, drop a tier;
+  // if the tier pokedex is complete, any of the tier will do
   for (int pass = 0; pass < 2; pass++) {
     for (int t = tier; t >= R_COMUN; t--) {
       int16_t cand[DEX_COUNT];
@@ -336,7 +336,7 @@ int16_t Pet::pickEggSpecies() {
       if (n > 0) return cand[random(n)];
     }
   }
-  return CLASSIC_DEX[random(NUM_CLASSIC_DEX)];  // inalcanzable, por si acaso
+  return CLASSIC_DEX[random(NUM_CLASSIC_DEX)];  // unreachable, just in case
 }
 
 void Pet::registerSpecies(int16_t dex) {
@@ -347,7 +347,7 @@ void Pet::registerSpecies(int16_t dex) {
   if (!wasKnown) applyDexRewards();
 }
 
-// la racha y el vinculo mejoran el sorteo del huevo (0..~14)
+// streak and bond improve the egg roll (0..~14)
 int Pet::careBonus() const {
   int s = streak > 30 ? 30 : streak;
   return s / 3 + bond / 25;
@@ -411,15 +411,15 @@ void Pet::noteDailyGoal(uint8_t goalType, uint8_t amount) {
   if (changed) save();
 }
 
-// primer cuidado del dia: avanza la racha y afianza el vinculo
+// first care of the day: advances the streak and strengthens the bond
 void Pet::registerCare() {
   if (isEgg() || ceremony != CER_NONE) return;
   uint32_t d = today();
-  if (d == 0 || d == lastCareDay) return;  // sin reloj, o ya conto hoy
+  if (d == 0 || d == lastCareDay) return;  // no clock, or already counted today
   if (lastCareDay == 0 || d == lastCareDay + 1) {
     streak++;
   } else {
-    streak = 1;        // hubo un hueco de dias
+    streak = 1;        // there was a gap of days
     lastMilestone = 0;
   }
   lastCareDay = d;
@@ -437,7 +437,7 @@ void Pet::registerCare() {
 }
 
 void Pet::addBond(uint8_t amt) {
-  if (bondToday >= 8) return;  // tope diario: el vinculo no se farmea
+  if (bondToday >= 8) return;  // daily cap: the bond cannot be farmed
   bond = clamp100(bond + amt);
   bondToday += amt;
 }
@@ -626,15 +626,15 @@ bool Pet::tryRespectCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLev
   return false;
 }
 
-// forma final que ya cumplio su ciclo (7 dias): lista para despedirse. La
-// despedida la dispara el usuario con el boton (no salta sola, para que la vea)
+// final form that already completed its cycle (7 days): ready for farewell. The
+// farewell is user-triggered with the button (not automatic, so they see it)
 bool Pet::canFarewellNow() const {
   return !isEgg() && !sleeping && ceremony == CER_NONE &&
          !hasEvolutionPath(speciesId) && ageMinutes >= FAREWELL_AGE_MIN;
 }
 
-// abandono total durante 1h: lista para escaparse. La dispara el usuario con el
-// boton (final triste); cuidarla un solo tick la salva (neglectTicks se resetea)
+// total neglect for 1h: ready to run away. The user triggers it with the
+// button (sad ending); caring for it a single tick saves it (neglectTicks resets)
 bool Pet::canRunawayNow() const {
   return !isEgg() && !sleeping && ceremony == CER_NONE && neglectTicks >= RUNAWAY_TICKS;
 }
@@ -644,7 +644,7 @@ void Pet::startFarewell() {
   lastEnd = CER_FAREWELL;
   ceremony = CER_FAREWELL;
   ceremonyUntil = millis() + CEREMONY_MS;
-  heartUntil = ceremonyUntil;  // corazones durante toda la despedida
+  heartUntil = ceremonyUntil;  // hearts during the whole farewell
   sfxPlay(SFX_BYE);
   save();
 }
@@ -671,13 +671,13 @@ void Pet::release() {
 void Pet::hatch() {
   speciesId = eggTarget;
   shiny = eggShiny;
-  // genes del individuo: 90-110% por stat (cada crianza es unica)
+  // genes of the individual: 90-110% per stat (every run is unique)
   geneAtk = 90 + random(21);
   geneDef = 90 + random(21);
   geneSpe = 90 + random(21);
   trAtk = trDef = trSpe = 0;
   berryKnown = false;
-  bond = 0;          // vinculo, medallas y nombre son del individuo
+  bond = 0;          // bond, medals and name belong to the individual
   bondToday = 0;
   medals = 0;
   newMedal = 0;
@@ -686,15 +686,15 @@ void Pet::hatch() {
   evoDeclinedLv = 0;
   evoDeclinedAge = 0;
   farDeclinedAge = 0;
-  registerSpecies(speciesId);  // criado = registrado en la pokedex
-  checkMedals();     // por si nace ya en forma final (legendario)
+  registerSpecies(speciesId);  // raised = registered in the pokedex
+  checkMedals();     // in case it is born already in final form (legendary)
   applyPendingStepRewards();
   sfxPlay(SFX_HATCH);
   save();
 }
 
-// Los niveles y condiciones de evolucion viven en EVOLUTION_RULES para poder
-// representar ramas y evoluciones de amistad/RTC sin romper partidas antiguas.
+// Levels and evolution conditions live in EVOLUTION_RULES so we can
+// represent branches and friendship/RTC evolutions without breaking old saves.
 static bool evolutionRuleReady(const Pet &pet, const EvolutionRule &rule) {
   uint16_t need = (uint16_t)rule.minLevel + pet.careMistakes;
   if (need > 100 || pet.level() < (uint8_t)need) return false;
@@ -844,8 +844,8 @@ void Pet::feedBerry(uint8_t color) {
   if (lovesBerry(color)) {
     fullness = clamp100(fullness + 35);
     joy = clamp100(joy + 10);
-    heartUntil = millis() + HEART_MS;  // "le encanta!"
-    berryKnown = true;                 // descubierto: se muestra en la ficha
+    heartUntil = millis() + HEART_MS;  // "it loves it!"
+    berryKnown = true;                 // discovered: shown on the card
     addBond(2);
   } else {
     fullness = clamp100(fullness + 25);
@@ -861,7 +861,7 @@ void Pet::feedCandy() {
   if (isEgg() || sleeping) return;
   fullness = clamp100(fullness + 10);
   joy = clamp100(joy + 12);
-  weight = clamp100(weight + 12);  // las chuches pasan factura
+  weight = clamp100(weight + 12);  // candies take their toll
   eatUntil = millis() + EAT_ANIM_MS;
   registerCare();
   noteDailyGoal(DAILY_GOAL_CARE, 1);
@@ -870,15 +870,15 @@ void Pet::feedCandy() {
 
 void Pet::playResult(uint8_t score) {
   if (ceremony != CER_NONE || isEgg()) return;
-  uint8_t v = trSpe + score / 5;  // jugar entrena la velocidad
+  uint8_t v = trSpe + score / 5;  // playing trains speed
   trSpe = v > 100 ? 100 : v;
   joy = clamp100(joy + 5 + (score > 15 ? 30 : score * 2));
   energy = dropTo(energy, 10 + score / 2, 5);
   fullness = dropTo(fullness, 5, 5);
-  int burn = (int)weight - score * 2;  // el ejercicio quema peso
+  int burn = (int)weight - score * 2;  // the exercise burns weight
   weight = burn > 0 ? burn : 0;
   if (score >= 5) heartUntil = millis() + HEART_MS;
-  if (score > gameHi) gameHi = score;  // nuevo record
+  if (score > gameHi) gameHi = score;  // new record
   addBond(2);
   registerCare();
   noteDailyGoal(DAILY_GOAL_PLAY, 1);
@@ -1058,13 +1058,13 @@ uint8_t Pet::stepTrailRank() const {
 }
 
 uint16_t Pet::stepShinyChancePer4096() const {
-  // Wilde Shinies bleiben selten: 8/4096 = 1/512 ohne Bewegung, bei
-  // 5.000 Tagesschritten steigt der Tagesanteil auf maximal 32/4096.
+  // Wild shinies stay rare: 8/4096 = 1/512 without movement, with
+  // 5,000 daily steps the daily share rises to at most 32/4096.
   uint16_t units = 8;
   uint32_t daily = stepsToday / 210UL;
   if (daily > 24) daily = 24;
   units += (uint16_t)daily;
-  // Gesamtmeilensteine geben einen kleinen, dauerhaften Trail-Vorteil.
+  // Total milestones give a small, permanent trail advantage.
   if (stepsTotal >= STEP_TOTAL_GOALS[0]) units += 1;
   if (stepsTotal >= STEP_TOTAL_GOALS[1]) units += 2;
   if (stepsTotal >= STEP_TOTAL_GOALS[2]) units += 2;
@@ -1090,8 +1090,8 @@ void Pet::recordStepReward(uint8_t index) {
   if (item < EXP_ITEM_COUNT && canReceiveExpeditionItem(item)) {
     itemCounts[item]++;
   } else if (isEgg() || ceremony != CER_NONE) {
-    // Ein Ei hat noch keine Stats. Die Belohnung wird nach dem Schlüpfen
-    // erneut versucht, damit volle Taschen keinen Fortschritt verschlucken.
+    // An egg has no stats yet. The reward is retried after hatching
+    // so that full bags do not swallow any progress.
     pendingStepRewardMask |= bit;
   } else if (index == 0) {
     joy = clamp100((int)joy + 5);
@@ -1155,8 +1155,8 @@ uint8_t Pet::applyWalk(uint16_t steps) {
   if ((oldToday / 100UL) != (stepsToday / 100UL) ||
       (oldTotal / 100UL) != (stepsTotal / 100UL)) pendingSave = true;
 
-  // Schritte werden auch beim Ei und in der Zeremonie gezaehlt; nur die
-  // bisherigen JOY/BOND-Wirkungen brauchen ein aktives Pokemon.
+  // Steps are counted for the egg and during the ceremony too; only the
+  // previous JOY/BOND effects need an active Pokemon.
   if (ceremony != CER_NONE || isEgg()) return 0;
 
   uint32_t d = today();
@@ -1223,20 +1223,20 @@ PetPersonality Pet::personality() const {
   return PERS_BALANCED;
 }
 
-// saco de entrenamiento: los golpes entrenan la fuerza. Devuelve la subida.
+// training bag: hits train strength. Returns the gain.
 uint8_t Pet::trainStrength(uint16_t hits) {
   if (ceremony != CER_NONE || isEgg()) return 0;
-  uint8_t gain = hits / 4;          // ~4 golpes = 1 punto de entrenamiento
-  if (gain > 18) gain = 18;         // tope por sesion: la FUE se forja a fuego lento
+  uint8_t gain = hits / 4;          // ~4 hits = 1 training point
+  if (gain > 18) gain = 18;         // per-session cap: ATK is forged over a slow fire
   uint8_t v = trAtk + gain;
   trAtk = v > 100 ? 100 : v;
-  energy = dropTo(energy, 12, 5);   // cansa
+  energy = dropTo(energy, 12, 5);   // tiring
   fullness = dropTo(fullness, 5, 5);
-  int burn = (int)weight - hits / 3;  // tambien quema peso
+  int burn = (int)weight - hits / 3;  // also burns weight
   weight = burn > 0 ? burn : 0;
   joy = clamp100(joy + 6);
   if (hits >= 20) heartUntil = millis() + HEART_MS;
-  if (hits > strHi) strHi = hits;   // record de golpes
+  if (hits > strHi) strHi = hits;   // hit record
   addBond(2);
   registerCare();
   save();
@@ -1477,8 +1477,8 @@ void Pet::save() {
   prefs.putUChar("mist", careMistakes);
   prefs.putBool("sleep", sleeping);
   prefs.putUChar("lend", lastEnd);
-  // millis()-Deadlines sind nach einem Neustart ungueltig. Der Marker sorgt
-  // dafuer, dass ein bereits begonnener Abschied beim Boot sauber endet.
+  // millis() deadlines are invalid after a restart. The marker ensures
+  // that an already started farewell ends cleanly on boot.
   prefs.putUChar("cerp", ceremony);
   if (lastSeenEpoch) prefs.putUInt("seen", lastSeenEpoch);
   prefs.putBytes("dexreg", dexReg, sizeof(dexReg));
@@ -1542,7 +1542,7 @@ void Pet::load() {
   geneAtk = prefs.getUChar("gatk", 0);
   geneDef = prefs.getUChar("gdef", 0);
   geneSpe = prefs.getUChar("gspe", 0);
-  if (geneAtk == 0) {  // mascota anterior a los genes: tirada unica ahora
+  if (geneAtk == 0) {  // pet from before the genes: single roll now
     geneAtk = 90 + random(21);
     geneDef = 90 + random(21);
     geneSpe = 90 + random(21);
@@ -1560,7 +1560,7 @@ void Pet::load() {
     speciesId = prefs.getShort("dexn", -1);
     eggTarget = prefs.getShort("eggT2", 4);
   } else {
-    // migracion desde la version con indices de flash (0-8)
+    // migration from the version with flash indices (0-8)
     static const uint8_t OLD2DEX[9] = { 4, 5, 6, 1, 2, 3, 7, 8, 9 };
     int8_t old = prefs.getChar("spec", -1);
     speciesId = (old >= 0 && old < 9) ? OLD2DEX[old] : -1;
@@ -1636,7 +1636,7 @@ void Pet::load() {
     expeditionRewardItem = EXP_ITEM_NONE;
   }
   prefs.getString("nick", nick, sizeof(nick));
-  // siembra: la mascota actual cuenta como criada (guardados antiguos)
+  // seeding: the current pet counts as raised (old saves)
   if (speciesId >= 1) registerSpecies(speciesId);
   ceremony = CER_NONE;
   ceremonyUntil = 0;

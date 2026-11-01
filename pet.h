@@ -4,20 +4,20 @@
 #include "time_utils.h"
 #include "dex.h"
 
-// 1 tick = 1 minuto de juego. Baja este valor para probar mas rapido
-// (p. ej. 5000UL = las estadisticas caen 12x mas rapido).
+// 1 tick = 1 minute of game time. Lower this value to test faster
+// (e.g. 5000UL = stats drop 12x faster).
 #define PET_TICK_MS 60000UL
-// Minutos de juego por nivel. Con 60, CHARMANDER evoluciona a las ~16 h
-// de juego con cuidado perfecto. Baja a 1 para ver evoluciones al momento.
+// Game minutes per level. With 60, CHARMANDER evolves at ~16 h
+// of play with perfect care. Lower to 1 to see evolutions instantly.
 #define MINUTES_PER_LEVEL 60
 #define EAT_ANIM_MS 2500UL
 #define HEART_MS 1500UL
-#define EVOLVE_ANIM_MS 5200UL              // animacion de evolucion (mas larga = mas epica)
-#define CEREMONY_MS 10000UL                // duracion de la despedida en pantalla
-#define FAREWELL_AGE_MIN (3UL * 24 * 60)   // se despide a los 3 dias de juego (en forma final)
-#define RUNAWAY_TICKS 60                   // se escapa tras 1 h con TODO a cero
+#define EVOLVE_ANIM_MS 5200UL              // evolution animation (longer = more epic)
+#define CEREMONY_MS 10000UL                // duration of the farewell on screen
+#define FAREWELL_AGE_MIN (3UL * 24 * 60)   // says farewell after 3 days of play (final form)
+#define RUNAWAY_TICKS 60                   // runs away after 1 h with EVERYTHING at zero
 
-// ceremonias de fin de ciclo
+// end-of-cycle ceremonies
 enum : uint8_t { CER_NONE = 0, CER_FAREWELL, CER_RUNAWAY, CER_RELEASE };
 
 enum PetMood : uint8_t { MOOD_HAPPY, MOOD_SAD, MOOD_EATING, MOOD_SLEEPING };
@@ -56,8 +56,8 @@ enum ExpeditionItem : uint8_t {
 #define EXP_ITEM_COUNT 4
 #define EXP_ITEM_MAX 3
 
-// Belohnungen der taeglichen Schritt-Meilensteine. Die Werte werden nur
-// kurzzeitig fuer die Anzeige gespeichert; der eigentliche Fortschritt liegt
+// Rewards of the daily step milestones. The values are only
+// stored briefly for the display; the actual progress lives
 // in stepDailyRewardMask/stepMilestoneMask.
 enum StepRewardEvent : uint8_t {
   STEP_REWARD_NONE = 0,
@@ -68,7 +68,7 @@ enum StepRewardEvent : uint8_t {
 };
 #define STEP_DAILY_GOAL_COUNT 3
 
-// Zustand fuer den kleinen Expeditions-Hinweis auf dem Hauptscreen.
+// State for the small expedition hint on the main screen.
 enum ExpeditionHudState : uint8_t {
   EXP_HUD_HIDDEN = 0,
   EXP_HUD_ACTIVE,
@@ -82,7 +82,7 @@ enum TrainingStat : int8_t {
   TRAIN_STAT_SPE,
 };
 
-// medallas del individuo (bitmask)
+// medals of the individual (bitmask)
 enum : uint16_t {
   MED_LV10 = 1 << 0, MED_LV25 = 1 << 1, MED_LV50 = 1 << 2,
   MED_BERRY = 1 << 3, MED_STREAK7 = 1 << 4, MED_BOND = 1 << 5,
@@ -104,48 +104,48 @@ struct BattleReward {
 
 class Pet {
 public:
-  // Estadisticas 0..100
-  uint8_t fullness = 80;  // comida
-  uint8_t joy = 80;       // felicidad
-  uint8_t energy = 80;    // energia
-  uint8_t hygiene = 100;  // limpieza
-  uint8_t poops = 0;      // cacas en pantalla (max 3)
-  uint8_t weight = 0;     // 0-100: las chuches engordan, el minijuego quema
-  // genes (90-110%, se tiran al eclosionar) y entrenamiento (0-100)
+  // Stats 0..100
+  uint8_t fullness = 80;  // FOOD
+  uint8_t joy = 80;       // JOY
+  uint8_t energy = 80;    // energy
+  uint8_t hygiene = 100;  // hygiene
+  uint8_t poops = 0;      // poops on screen (max 3)
+  uint8_t weight = 0;     // 0-100: candies fatten, the minigame burns it off
+  // genes (90-110%, rolled at hatch) and training (0-100)
   uint8_t geneAtk = 100, geneDef = 100, geneSpe = 100;
   uint8_t trAtk = 0, trDef = 0, trSpe = 0;
-  bool berryKnown = false;  // ya descubrio su baya favorita
-  bool shiny = false;       // variante de color rara (se sortea en el huevo)
+  bool berryKnown = false;  // already discovered its favorite berry
+  bool shiny = false;       // rare color variant (rolled in the egg)
   uint32_t ageMinutes = 0;
-  int16_t speciesId = -1;      // numero de Pokedex (1-DEX_COUNT), -1 = huevo
-  int16_t prevSpeciesId = -1;  // para la animacion de evolucion
-  uint8_t careMistakes = 0;   // descuidos: cada uno retrasa la evolucion 1 nivel
+  int16_t speciesId = -1;      // Pokedex number (1-DEX_COUNT), -1 = egg
+  int16_t prevSpeciesId = -1;  // for the evolution animation
+  uint8_t careMistakes = 0;   // care mistakes: each one delays evolution by 1 level
   bool sleeping = false;
-  uint32_t lastSeenEpoch = 0;   // ultima hora RTC vista (para progresion offline)
-  uint8_t ceremony = CER_NONE;  // despedida/escapada/liberacion en curso
-  uint8_t lastEnd = CER_NONE;   // como acabo la anterior (afecta al huevo)
-  uint8_t dexReg[DEX_BITMAP_BYTES] = { 0 };       // pokedex de criados
-  uint8_t dexShinyReg[DEX_BITMAP_BYTES] = { 0 };  // shiny criado o capturado
-  uint8_t dexCaught[DEX_BITMAP_BYTES] = { 0 };    // pokedex de salvajes capturados
-  // racha de cuidado diario (del jugador: persiste entre crianzas)
+  uint32_t lastSeenEpoch = 0;   // last RTC time seen (for offline progression)
+  uint8_t ceremony = CER_NONE;  // farewell/runaway/release in progress
+  uint8_t lastEnd = CER_NONE;   // how the previous one ended (affects the egg)
+  uint8_t dexReg[DEX_BITMAP_BYTES] = { 0 };       // pokedex of raised pets
+  uint8_t dexShinyReg[DEX_BITMAP_BYTES] = { 0 };  // shiny raised or caught
+  uint8_t dexCaught[DEX_BITMAP_BYTES] = { 0 };    // pokedex of caught wild ones
+  // daily care streak (of the player: persists across pet life cycle runs)
   uint16_t streak = 0, bestStreak = 0;
   uint32_t lastCareDay = 0;
-  // vinculo (del bicho: sube lento con cuidado, se resetea al nacer otro)
+  // bond (of the pet: rises slowly with care, resets when another is born)
   uint8_t bond = 0;
-  char nick[12] = "";    // apodo (vacio = nombre de especie)
-  // medallas: del individuo + contador acumulado entre todas las crianzas
+  char nick[12] = "";    // nickname (empty = species name)
+  // medals: of the individual + cumulative counter across all runs
   uint16_t medals = 0, totalMedals = 0;
-  uint16_t newMedal = 0;   // recien conseguida(s), para celebrar
-  uint16_t lastMilestone = 0;  // hito de racha ya celebrado
-  uint16_t gameHi = 0;     // record del minijuego (del jugador)
-  uint16_t strHi = 0;      // record de golpes al saco
-  uint16_t catchHi = 0;    // record de capturas del minijuego catch
-  uint16_t memoHi = 0;     // record de rondas del minijuego memo
-  uint16_t cleanHi = 0;    // record del minijuego clean
-  uint16_t typeHi = 0;     // record del minijuego type match
+  uint16_t newMedal = 0;   // newly earned one(s), to celebrate
+  uint16_t lastMilestone = 0;  // streak milestone already celebrated
+  uint16_t gameHi = 0;     // minigame record (of the player)
+  uint16_t strHi = 0;      // record of hits on the training bag
+  uint16_t catchHi = 0;    // catch minigame record
+  uint16_t memoHi = 0;     // memo minigame record
+  uint16_t cleanHi = 0;    // clean minigame record
+  uint16_t typeHi = 0;     // type match minigame record
   uint16_t battleWins = 0, battleLosses = 0;
   uint16_t battleStreak = 0, bestBattleStreak = 0;
-  uint8_t collectionFrame = 0;  // 0=Basis, weitere Rahmen ueber Dex-Meilensteine
+  uint8_t collectionFrame = 0;  // 0=basic, further frames via dex milestones
   uint32_t lastPetInteractMinute = 0;
   uint16_t dexRewardMask = 0;
   uint32_t dailyGoalDay = 0;
@@ -155,8 +155,8 @@ public:
   uint8_t itemCounts[EXP_ITEM_COUNT] = { 0 };
   uint32_t expeditionEndEpoch = 0;
   uint8_t expeditionRewardItem = EXP_ITEM_NONE;
-  // Schrittfortschritt des Spielers: heute wird am RTC-Tag zurueckgesetzt,
-  // der Gesamtwert bleibt ueber Eier und neue Pokemon erhalten.
+  // Player step progress: today's value resets on the RTC day,
+  // the total value is kept across eggs and new Pokemon.
   uint32_t stepsToday = 0;
   uint32_t stepsTotal = 0;
   uint32_t stepDay = 0;
@@ -165,17 +165,17 @@ public:
   bool saveLoadedFromNvs = false;
   bool saveCreatedThisBoot = false;
 
-  void begin();                 // carga estado de NVS (o crea el primer huevo)
-  bool update(uint32_t nowMs);  // true cuando avanzo el estado del bicho
+  void begin();                 // loads NVS state (or creates the first egg)
+  bool update(uint32_t nowMs);  // true when the pet state advanced
 
-  // Acciones (botones tactiles)
-  void feed();              // baya roja (compatibilidad)
-  void feedBerry(uint8_t color);  // 0 roja, 1 azul, 2 verde
+  // Actions (touch buttons)
+  void feed();              // red berry (compatibility)
+  void feedBerry(uint8_t color);  // 0 red, 1 blue, 2 green
   void feedCandy();
   bool lovesBerry(uint8_t color) const {
-    return !isEgg() && (speciesId % 3) == color;  // gusto oculto por especie
+    return !isEgg() && (speciesId % 3) == color;  // hidden taste per species
   }
-  void playResult(uint8_t score);  // recompensa del minijuego (entrena VEL)
+  void playResult(uint8_t score);  // minigame reward (trains SPE)
   uint8_t applyCatchResult(uint8_t score);
   uint8_t applyMemoResult(uint8_t rounds);
   uint8_t applyCleanResult(uint8_t score);
@@ -196,12 +196,12 @@ public:
   void ensureDailyGoals();
   uint8_t dailyGoalTarget(uint8_t goalType) const;
   bool dailyGoalComplete(uint8_t index) const;
-  uint8_t trainStrength(uint16_t hits);  // saco de entrenamiento (entrena FUE)
+  uint8_t trainStrength(uint16_t hits);  // training bag (trains ATK)
   BattleReward applyBattleWin(int16_t wildDex, bool closeWin);
   void applyBattleLoss();
 
-  // Expediciones: el premio se sortea y guarda al salir para que un reinicio
-  // no permita repetir la tirada. Los rolls son inyectables para pruebas nativas.
+  // Expeditions: the prize is rolled and saved on exit so that a restart
+  // cannot repeat the roll. The rolls are injectable for native tests.
   static uint8_t expeditionEnergyCost(uint8_t minutes);
   bool expeditionActive(uint32_t nowEpoch) const;
   bool expeditionReady(uint32_t nowEpoch) const;
@@ -214,53 +214,53 @@ public:
   ExpeditionItem claimExpedition(uint32_t nowEpoch);
   bool useExpeditionItem(ExpeditionItem item, int8_t trainingStat = -1);
 
-  // stats de combate: base real de gen 1 x genes + nivel + entrenamiento
+  // combat stats: real gen 1 base x genes + level + training
   uint16_t atkStat() const;
   uint16_t defStat() const;
   uint16_t speStat() const;
   void play();
-  void toggleLight();  // dormir / despertar
+  void toggleLight();  // sleep / wake
   void clean();
-  void caress();  // tocar al bicho
-  void eggTap();  // tocar el huevo: 3 toques y eclosiona
-  void newEgg();   // empezar de cero con un inicial aleatorio
-  void release();  // soltar (pulsacion larga + confirmar)
-  void syncClock(uint32_t nowEpoch);  // aplica el tiempo transcurrido apagado
-  void setClock(uint32_t nowEpoch);   // fija la hora sin aplicar progresion
-  void startFarewell();  // tambien usable desde la consola serie (BYE)
-  void startRunaway();   // tambien usable desde la consola serie (RUN)
+  void caress();  // touch the pet
+  void eggTap();  // touch the egg: 3 taps and it hatches
+  void newEgg();   // start over with a random starter
+  void release();  // release (long press + confirm)
+  void syncClock(uint32_t nowEpoch);  // applies the time elapsed while switched off
+  void setClock(uint32_t nowEpoch);   // sets the time without applying progression
+  void startFarewell();  // also usable from the serial console (BYE)
+  void startRunaway();   // also usable from the serial console (RUN)
 
   bool isEgg() const { return speciesId < 0; }
   uint8_t eggCracks() const { return eggTaps; }
   bool eating() const { return deadlineActive(millis(), eatUntil); }
   bool showHeart() const { return deadlineActive(millis(), heartUntil); }
   bool evolving() const { return deadlineActive(millis(), evolveUntil); }
-  float evolveT() const {     // progreso de la animacion de evolucion 0..1
+  float evolveT() const {     // evolution animation progress 0..1
     uint32_t n = millis();
     uint32_t left = deadlineRemaining(n, evolveUntil);
     return 1.0f - (float)left / (float)EVOLVE_ANIM_MS;
   }
-  bool evolutionUnlocked() const;  // nivel/condicion: al menos una forma disponible
-  bool canEvolveNow() const;  // lista: unlocked + wach + 3 de 4 valores > 40
+  bool evolutionUnlocked() const;  // level/condition: at least one form available
+  bool canEvolveNow() const;  // ready: unlocked + awake + 3 of 4 stats > 40
   uint8_t evolutionOptionCount() const;
   int16_t evolutionOption(uint8_t index) const;
   uint8_t evolutionRequiredLevel() const;
   uint8_t evolutionRequiredLevelFor(int16_t target) const;
   bool canEvolveTo(int16_t target) const;
-  void evolveTo(int16_t target);  // transforma a un objetivo elegido
-  void evolve();                  // compatibilidad: elige una opcion disponible
-  bool canFarewellNow() const;  // forma final + 7 dias: lista para despedirse (boton)
-  bool canRunawayNow() const;   // abandono total 1h: lista para escaparse (boton triste)
-  // el usuario decide en un dialogo; "mantener/quedaros" pospone y re-ofrece luego
+  void evolveTo(int16_t target);  // transforms into a chosen target
+  void evolve();                  // compatibility: picks an available option
+  bool canFarewellNow() const;  // final form + 7 days: ready for farewell (button)
+  bool canRunawayNow() const;   // total neglect 1h: ready to run away (sad button)
+  // the user decides in a dialog; "keep/stay" postpones and offers again later
   bool wantEvolveButton() const;
   bool wantFarewellButton() const { return canFarewellNow() && ageMinutes >= farDeclinedAge; }
   void declineEvolve();
   void resetEvolutionDeferral();
-  void declineFarewell() { farDeclinedAge = ageMinutes + 1440; } // re-ofrece dentro de 1 dia
-  // primera partida: el jugador elige inicial (Bulbasaur/Charmander/Squirtle)
+  void declineFarewell() { farDeclinedAge = ageMinutes + 1440; } // offers again within 1 day
+  // first run: the player picks a starter (Bulbasaur/Charmander/Squirtle)
   bool awaitingStarter() const { return starterPick; }
   void chooseStarter(int16_t dex) { eggTarget = dex; starterPick = false; save(); }
-  void factoryReset() { prefs.clear(); }  // borra la NVS (test: comando serie WIPE)
+  void factoryReset() { prefs.clear(); }  // wipes NVS (test: serial command WIPE)
   void dbgRunawayReady() { fullness = joy = energy = hygiene = 0; neglectTicks = RUNAWAY_TICKS; }  // test
   uint8_t level() const {
     uint32_t raw = 1UL + ageMinutes / MINUTES_PER_LEVEL;
@@ -292,15 +292,15 @@ public:
                            uint8_t luckRoll, bool shinyVariant = false);
   bool lineHasUnregistered(int16_t base) const;
   bool hasEvolutionPath(int16_t dex) const;
-  uint8_t eggRarity() const;       // rareza del huevo actual (sin revelar especie)
-  int16_t pickEggSpecies();        // publica para poder simular tiradas (EGGS)
+  uint8_t eggRarity() const;       // rarity of the current egg (species kept hidden)
+  int16_t pickEggSpecies();        // public so rolls can be simulated (EGGS)
   uint8_t healthyStatCount() const {
     return (uint8_t)((fullness > 40 ? 1 : 0) + (joy > 40 ? 1 : 0) +
                      (energy > 40 ? 1 : 0) + (hygiene > 40 ? 1 : 0));
   }
   uint8_t lowestStat() const { return min(min(fullness, joy), min(energy, hygiene)); }
   PetMood mood() const;
-  // progreso de la ceremonia de despedida/escapada, 0..1 (para animarla)
+  // farewell/runaway ceremony progress, 0..1 (to animate it)
   float ceremonyT() const {
     if (ceremony == CER_NONE) return 0.0f;
     uint32_t n = millis();
@@ -308,18 +308,18 @@ public:
     return 1.0f - (float)left / (float)CEREMONY_MS;
   }
 
-  // racha / vinculo / medallas / nombre
+  // streak / bond / medals / name
   void rename(const char *name);
   bool hasMedal(uint16_t m) const { return medals & m; }
   bool showMedal() const { return deadlineActive(millis(), medalUntil); }
   bool showMilestone() const { return deadlineActive(millis(), milestoneUntil); }
   bool showDexReward() const { return deadlineActive(millis(), dexRewardUntil); }
   uint16_t lastDexRewardGoal() const { return lastDexReward; }
-  int careBonus() const;  // mejora del huevo por racha + vinculo
+  int careBonus() const;  // egg bonus from streak + bond
 
-  // guardado periodico diferido: tick() marca pendiente y el loop lo vuelca
-  // cuando la pantalla esta atenuada/apagada (la escritura a flash congela
-  // ~1s ambos cores: asi no se ve ni corta el tactil)
+  // deferred periodic save: tick() marks pending and the loop flushes it
+  // when the screen is dimmed/off (the flash write freezes
+  // both cores for ~1s: that way it is not seen and touch is not cut)
   bool savePending() const { return pendingSave; }
   void flushSave();
   // Versioned game-state backup for the browser USB tool; never includes SD data.
@@ -333,22 +333,22 @@ private:
   uint32_t eatUntil = 0;
   uint32_t heartUntil = 0;
   uint32_t evolveUntil = 0;
-  int16_t eggTarget = 1;       // dex oculto que saldra del huevo
-  bool eggShiny = false;       // sorpresa sorteada al crear el huevo
+  int16_t eggTarget = 1;       // hidden dex that will come out of the egg
+  bool eggShiny = false;       // surprise rolled when creating the egg
   uint8_t eggTaps = 0;
   uint8_t mistakeCooldown = 0;
   uint8_t ticksSinceSave = 0;
-  bool pendingSave = false;     // guardado periodico pendiente de volcar
-  uint8_t evoDeclinedLv = 0;    // "mantener forma": no ofrecer hasta el siguiente nivel
-  uint32_t evoDeclinedAge = 0;  // auf Lv.100: wieder anbieten ab diesem Alter
-  uint32_t farDeclinedAge = 0;  // "quedaros juntos": no ofrecer despedida hasta esta edad
-  bool starterPick = false;     // primera partida: esperando que el jugador elija inicial
+  bool pendingSave = false;     // periodic save pending flush
+  uint8_t evoDeclinedLv = 0;    // "keep form": do not offer until the next level
+  uint32_t evoDeclinedAge = 0;  // at Lv.100: offer again from this age on
+  uint32_t farDeclinedAge = 0;  // "stay together": do not offer farewell until this age
+  bool starterPick = false;     // first run: waiting for the player to pick a starter
   uint8_t neglectTicks = 0;
-  uint16_t goodTicks = 0;  // racha bien cuidado: forja la DEF
+  uint16_t goodTicks = 0;  // well cared streak: forges DEF
   uint32_t ceremonyUntil = 0;
-  uint8_t bondToday = 0;       // tope diario de subida de vinculo
-  uint32_t medalUntil = 0;     // celebracion de medalla en pantalla
-  uint32_t milestoneUntil = 0; // celebracion de hito de racha
+  uint8_t bondToday = 0;       // daily cap for bond gain
+  uint32_t medalUntil = 0;     // medal celebration on screen
+  uint32_t milestoneUntil = 0; // streak milestone celebration
   uint32_t dexRewardUntil = 0;
   uint16_t lastDexReward = 0;
   uint32_t lastMorningDay = 0;
@@ -367,7 +367,7 @@ private:
   uint8_t pendingStepRewardMask = 0;
 
   uint32_t today() const { return lastSeenEpoch ? lastSeenEpoch / 86400 : 0; }
-  void registerCare();   // primer cuidado del dia: racha + vinculo
+  void registerCare();   // first care of the day: streak + bond
   void addBond(uint8_t amt);
   void noteDailyGoal(uint8_t goalType, uint8_t amount);
   void applyDailyReward();

@@ -16,7 +16,7 @@ bool PmdMon::load(uint16_t dexNum, bool shiny) {
   char path[28];
   snprintf(path, sizeof(path), "/mons/p%s%03u.bin", shiny ? "s" : "", dexNum);
   File f = SD_MMC.open(path, FILE_READ);
-  if (!f && shiny) {  // sin shiny PMD: usa el normal
+  if (!f && shiny) {  // no shiny PMD file: fall back to the normal one
     snprintf(path, sizeof(path), "/mons/p%03u.bin", dexNum);
     f = SD_MMC.open(path, FILE_READ);
   }
@@ -43,7 +43,7 @@ bool PmdMon::load(uint16_t dexNum, bool shiny) {
     uint8_t id = p[0], w = p[1], h = p[2], nf = p[3];
     p += 4;
     if (id >= PMD_NACTS || nf > 24) { unload(); return false; }
-    // valida que ms[] y los datos del frame caben en el blob (archivo truncado)
+    // validate that ms[] and the frame data fit in the blob (truncated file)
     uint32_t bytes = (uint32_t)nf * 2 + (uint32_t)w * h * nf;
     if (w == 0 || h == 0 || nf == 0 || p + bytes > end) { unload(); return false; }
     PmdAct &a = acts[id];
@@ -56,7 +56,7 @@ bool PmdMon::load(uint16_t dexNum, bool shiny) {
     }
     a.data = p;
     p += (uint32_t)w * h * nf;
-    // fila mas baja con contenido en cualquier frame: anclar por los pies
+    // lowest row with content in any frame: anchor by the feet
     uint8_t base = 1;
     for (uint8_t f = 0; f < nf; f++) {
       const uint8_t *fr = a.data + (uint32_t)f * w * h;
@@ -130,7 +130,7 @@ const uint8_t *SdThumbs::get(int16_t dex) const {
 
 bool sdBegin() {
   SD_MMC.setPins(SDMMC_CLK, SDMMC_CMD, SDMMC_DATA);
-  sdReady = SD_MMC.begin("/sdcard", true /* modo 1-bit */, true /* formatea si no monta */);
+  sdReady = SD_MMC.begin("/sdcard", true /* 1-bit mode */, true /* format when mount fails */);
   if (sdReady) {
     Serial.printf("SD montada: %llu MB\n", SD_MMC.cardSize() / (1024ULL * 1024ULL));
     SD_MMC.mkdir("/mons");
@@ -147,7 +147,7 @@ bool SdMon::load(uint16_t dexNum, bool shiny) {
   char path[24];
   snprintf(path, sizeof(path), "/mons/%s%03u.bin", shiny ? "s" : "", dexNum);
   File f = SD_MMC.open(path, FILE_READ);
-  if (!f && shiny) {  // sin variante shiny: usa la normal
+  if (!f && shiny) {  // no shiny variant: use the normal one
     snprintf(path, sizeof(path), "/mons/%03u.bin", dexNum);
     f = SD_MMC.open(path, FILE_READ);
   }
@@ -167,7 +167,7 @@ bool SdMon::load(uint16_t dexNum, bool shiny) {
   h = header[1];
   frames = header[2];
   frameMs = header[3];
-  // acota dimensiones: evita size desbordado o absurdo con archivo corrupto
+  // clamp dimensions: avoids overflowing or absurd sizes on a corrupt file
   if (f.read((uint8_t *)&palCount, 2) != 2 || palCount > 256 ||
       w == 0 || w > 256 || h == 0 || h > 256 || frames == 0 || frames > 64) {
     f.close();
@@ -193,7 +193,7 @@ bool SdMon::load(uint16_t dexNum, bool shiny) {
     return false;
   }
 
-  // zoom entero para que el bicho mida ~200 px de alto en pantalla
+  // integer zoom so the pet measures ~200 px high on screen
   scale = 200 / h;
   if (scale < 2) scale = 2;
   if (scale > 5) scale = 5;
@@ -213,10 +213,10 @@ void SdMon::unload() {
 }
 
 // ---------------------------------------------------------------------------
-// Protocolo de carga por USB (para llenar la SD sin sacarla de la placa):
-//   PUT <ruta> <bytes>\n  + datos crudos   -> "OK" ... "DONE"
-//   LS\n                                   -> listado de /mons
-// Usar con tools/send_sd.py
+// USB upload protocol (fills the SD without removing it from the board):
+//   PUT <path> <bytes>\n  + raw data   -> "OK" ... "DONE"
+//   LS\n                               -> listing of /mons
+// Used by tools/send_sd.py
 // ---------------------------------------------------------------------------
 
 bool sdSerialCommand(const String &line) {
@@ -244,7 +244,7 @@ bool sdSerialCommand(const String &line) {
       if (n == 0) break;  // timeout
       f.write(buf, n);
       remaining -= n;
-      Serial.println("#");  // ack: listo para el siguiente bloque
+      Serial.println("#");  // ack: ready for the next block
     }
     f.close();
     Serial.setTimeout(1000);

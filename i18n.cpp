@@ -5,8 +5,8 @@
 
 Lang gLang = LANG_DEFAULT;
 
-// Tabla de cadenas [idioma][id]. Sin acentos ni enes: la fuente bitmap del
-// firmware no los tiene (por eso el espanol ya iba "Esta", "bano", etc.).
+// String table [language][id]. No accents or tildes: the firmware bitmap font
+// has none (which is why Spanish already used "Esta", "bano", etc.).
 static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
   // ---------------- ES ----------------
   {
@@ -376,7 +376,7 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
   },
 };
 
-// Nombres de medalla en sus tres longitudes [idioma][medalla].
+// Medal names in their three lengths [language][medal].
 static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Nv.10", "Nv.25", "Nv.50", "BAYA", "RACHA 7", "VINCULO", "FORMA TOPE", "EN FORMA" },
   { "Lv.10", "Lv.25", "Lv.50", "BERRY", "7 STREAK", "BOND", "TOP FORM", "IN SHAPE" },
@@ -422,7 +422,7 @@ const char *medalDesc(int i)  { return MED_DSC[gLang][i]; }
 
 void loadLang() {
   Preferences p;
-  p.begin("tamapoke", true);  // solo lectura
+  p.begin("tamapoke", true);  // read only
   uint8_t v = p.getUChar("lang", LANG_DEFAULT);
   p.end();
   gLang = (v < LANG_COUNT) ? (Lang)v : LANG_DEFAULT;

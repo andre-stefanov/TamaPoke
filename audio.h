@@ -1,19 +1,19 @@
 #pragma once
 #include <stdint.h>
 
-// Efectos de sonido del juego (cola, no bloqueante). El orden coincide con la
-// tabla SFX de audio.cpp.
+// Game sound effects (queued, non-blocking). The order matches the SFX
+// table in audio.cpp.
 enum Sfx : uint8_t {
-  SFX_TAP = 0,  // tocar / boton
-  SFX_EAT,      // comer
-  SFX_PLAY,     // punto del minijuego / golpe
-  SFX_HEART,    // le gusta / mimo
-  SFX_HATCH,    // eclosion
-  SFX_EVOLVE,   // evolucion
-  SFX_MEDAL,    // medalla / hito
-  SFX_DENY,     // accion no permitida
-  SFX_BYE,      // despedida
-  SFX_LEVEL,    // sube de nivel
+  SFX_TAP = 0,  // tap / button
+  SFX_EAT,      // eating
+  SFX_PLAY,     // minigame point / hit
+  SFX_HEART,    // likes it / petting
+  SFX_HATCH,    // hatching
+  SFX_EVOLVE,   // evolution
+  SFX_MEDAL,    // medal / milestone
+  SFX_DENY,     // action not allowed
+  SFX_BYE,      // farewell
+  SFX_LEVEL,    // level up
   SFX_BATTLE_WIN,
   SFX_BATTLE_LOSS,
   SFX_CATCH_OK,
@@ -53,11 +53,11 @@ enum SoundMode : uint8_t {
   SOUND_FULL,
 };
 
-void audioBegin();          // init ES8311 + I2S + amplificador + tarea de audio
-void sfxPlay(uint8_t id);   // encola un efecto (no bloquea el loop)
+void audioBegin();          // init ES8311 + I2S + amplifier + audio task
+void sfxPlay(uint8_t id);   // queues an effect (does not block the loop)
 void audioSetEnabled(bool on);
 bool audioEnabled();
 void audioSetMode(uint8_t mode);
 uint8_t audioMode();
 bool audioBusy();
-void speciesChirpPlay(int16_t dex, bool force = false);  // eigener, synthetisierter Spezies-Chirp
+void speciesChirpPlay(int16_t dex, bool force = false);  // custom, synthesized species chirp

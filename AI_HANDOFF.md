@@ -1,332 +1,329 @@
 # TamaPoke Expanded - AI Handoff
 
-Stand: 2026-09-07
+As of: 2026-09-07
 
-## Projekt und Hardware
+## Project and Hardware
 
-Dieses Repository ist eine stark erweiterte, community-orientierte Firmware fuer
-das Waveshare ESP32-S3 Touch AMOLED 1.75. Es ist ein Fork von
-`socquique/TamaPoke` und wird als "Expanded"-Variante gepflegt.
+This repository is a heavily extended, community-oriented firmware for
+the Waveshare ESP32-S3 Touch AMOLED 1.75. It is a fork of
+`socquique/TamaPoke` and is maintained as the "Expanded" variant.
 
-- Firmware-Entry-Point: `TamaPoke.ino`
-- Ausgangs-Firmware-Stand: `1.32.1-caught-mark`
-- Lokaler Gen-3/Wasserzeichen-/Schritt-Test: `1.36.0-gen3-local` (ueber `TAMAPOKE_LOCAL_TEST`)
-- Oeffentlicher Gen-3-Release: `1.36.0` (ueber
-  `TAMAPOKE_GEN3_RELEASE`, ohne lokale Debugbefehle)
-- Board: ESP32-S3, 16 MB Flash, OPI PSRAM, rundes 466x466 AMOLED, CST9217 Touch,
-  PCF85063 RTC, AXP2101 PMU, ES8311 Audio
-- Validierte Toolchain: ESP32-Core 3.3.10, Arduino_GFX 1.6.7,
-  SensorLib 0.4.1 und XPowersLib 0.3.3.
-- Sprache: DE, EN, ES, FR, IT, PT. Code und UI-Texte verwenden aus
-  Font-Gruenden weitgehend ASCII ohne Umlaute/Akzente.
+- Firmware entry point: `TamaPoke.ino`
+- Baseline firmware state: `1.32.1-caught-mark`
+- Local Gen-3/watermark/step test: `1.36.0-gen3-local` (via `TAMAPOKE_LOCAL_TEST`)
+- Public Gen-3 release: `1.36.0` (via
+  `TAMAPOKE_GEN3_RELEASE`, without local debug commands)
+- Board: ESP32-S3, 16 MB flash, OPI PSRAM, round 466x466 AMOLED, CST9217 touch,
+  PCF85063 RTC, AXP2101 PMU, ES8311 audio
+- Validated toolchain: ESP32 core 3.3.10, Arduino_GFX 1.6.7,
+  SensorLib 0.4.1 and XPowersLib 0.3.3.
+- Languages: DE, EN, ES, FR, IT, PT. For font reasons, code and UI texts
+  largely use ASCII without umlauts/accents.
 
-Die Firmware speichert den Spielstand in ESP32-NVS. Bei einem Update darf der
-Installer **nicht** mit `Erase device` ausgefuehrt werden, sonst wird der Save
-geloescht.
+The firmware stores the game state in ESP32 NVS. During an update the
+installer must **not** be run with `Erase device`, otherwise the save is
+deleted.
 
-## Wichtige Arbeitsregel
+## Important Working Rule
 
-**Niemals auf GitHub pushen, Releases erstellen oder die PR aktualisieren, ohne
-die ausdrueckliche Aufforderung des Nutzers.**
+**Never push to GitHub, create releases or update the PR without the user's
+explicit request.**
 
-Der Nutzer moechte unfertige lokale Versionen erst auf seiner Hardware testen.
-Lokales Bauen, Testen und ein lokaler Web-Installer sind immer erlaubt und
-erwuenscht.
+The user wants to test unfinished local versions on his hardware first. Local
+building, testing and a local web installer are always allowed and desired.
 
-## Aktueller Gen-3-Arbeitsstand
+## Current Gen-3 Work State
 
-- Branch `local/full-gen3`; Tag `local-before-gen3` erlaubt die schnelle
-  Rueckkehr zum funktionierenden Gen-2-Stand. Der getestete Gen-3-Featurestand
-  `da8bfa8` liegt bereits auf `fork/main`. Der gehostete Installer und der
-  GitHub-Release verwenden den debugfreien Gen-3-Stand `1.36.0`.
-- Lokaler Dex #1–386 mit sechs Sprachen, uint16-Dexpfaden, Gen-3-Stats/Typen,
-  Evolutionsregeln und dem 3-von-4-Stats-Gate ueber 40 Prozent.
-- Lokaler Erststart: Region Kanto/Johto/Hoenn waehlen, danach einen von drei
-  Regions-Startern. Vorhandene Saves werden nicht migriert oder geloescht.
-- Alle 270 Gen-3-SpriteCollab-Dateien (Normal + Shiny) sind in
-  `tools/sdcard/mons/`; `thumbs.bin` hat 386 Eintraege.
-- `web/sprites-gen3-update.pak` umfasst #252–386 (ca. 38 MB). Das oeffentliche
-  `web/sprites.pak` bleibt #1–251. Der lokale Button fuer das volle 386er-Paket
-  sendet beide Dateien nacheinander; dadurch bleibt jede GitHub-Datei unter
-  dem 100-MB-Limit.
-- Eine einzelne Datei `sprites-gen3-full.pak` existiert nicht mehr und darf in
-  Anleitungen oder Release-Texten nicht verlangt werden.
-- Lokaler Webtest: `cd web && python3 -m http.server 8000`, danach
-  `http://localhost:8000/dev.html` in Chrome/Edge. Schritt-, IMU- und
-  Evolutionsdiagnosen laufen dort ueber Klicks; kein `screen`-Terminal noetig.
-- Build mit `bash tools/build_web_local.sh`; die vier lokalen Firmware-Parts
-  liegen danach unter `web/firmware/tamapoke-1.36.0-gen3-local-*.bin`.
-- Der oeffentliche, debugfreie Release wird mit `bash tools/build_web.sh`
-  gebaut. `bash tools/build_web_gen3.sh` ist der zugrunde liegende Gen-3-Build;
-  `web/release-gen3.html` bleibt eine lokale Referenzseite.
-- README, Installer und Release-Text sagen deutlich: Firmware-Flash allein
-  reicht nicht; danach ist
-  Schritt 2 fuer die microSD-Sprites Pflicht. Bei neuer/leerer/unklarer Karte
-  immer das volle 386er-Paket statt nur des Gen-3-Updates verwenden.
+- Branch `local/full-gen3`; the tag `local-before-gen3` allows a quick
+  return to the working Gen-2 state. The tested Gen-3 feature state
+  `da8bfa8` is already on `fork/main`. The hosted installer and the
+  GitHub release use the debug-free Gen-3 state `1.36.0`.
+- Local dex #1–386 with six languages, uint16 dex paths, Gen-3 stats/types,
+  evolution rules and the 3-of-4 stats gate above 40 percent.
+- Local first start: choose the region Kanto/Johto/Hoenn, then one of three
+  regional starters. Existing saves are not migrated or deleted.
+- All 270 Gen-3 SpriteCollab files (normal + shiny) are in
+  `tools/sdcard/mons/`; `thumbs.bin` has 386 entries.
+- `web/sprites-gen3-update.pak` covers #252–386 (approx. 38 MB). The public
+  `web/sprites.pak` remains #1–251. The local button for the full 386 pack
+  sends both files one after another; this keeps every GitHub file below
+  the 100 MB limit.
+- A single file `sprites-gen3-full.pak` no longer exists and must not be
+  required in instructions or release texts.
+- Local web test: `cd web && python3 -m http.server 8000`, then
+  `http://localhost:8000/dev.html` in Chrome/Edge. Step, IMU and
+  evolution diagnostics run there via clicks; no `screen` terminal needed.
+- Build with `bash tools/build_web_local.sh`; the four local firmware parts
+  are then located under `web/firmware/tamapoke-1.36.0-gen3-local-*.bin`.
+- The public, debug-free release is built with `bash tools/build_web.sh`.
+  `bash tools/build_web_gen3.sh` is the underlying Gen-3 build;
+  `web/release-gen3.html` remains a local reference page.
+- README, installer and release text state clearly: flashing the firmware
+  alone is not enough; afterwards
+  step 2 for the microSD sprites is mandatory. With a new/empty/unclear card
+  always use the full 386 pack instead of only the Gen-3 update.
 
-## Aktueller Arbeitsbaum
+## Current Working Tree
 
-Der oeffentliche Installer zeigt auf den debugfreien Gen-3-Build `1.36.0`.
-Fuer Hardwaretests existieren weiterhin `web/dev.html` und
-`web/manifest-local.json`; diese Debug-Dateien sind bewusst nicht Teil des
-oeffentlichen Installationsflusses.
+The public installer points to the debug-free Gen-3 build `1.36.0`.
+For hardware tests `web/dev.html` and
+`web/manifest-local.json` still exist; these debug files are deliberately not
+part of the public installation flow.
 
-Aktuelle lokale Testguards in `TamaPoke.ino`:
+Current local test guards in `TamaPoke.ino`:
 
-- `TAMAPOKE_LOCAL_TEST` setzt die Anzeigeversion auf `1.36.0-gen3-local`.
-- `TAMAPOKE_GEN3_RELEASE` setzt die Anzeigeversion auf `1.36.0` und erlaubt den
-  386er-Dex, schaltet aber keine Debugbefehle frei.
-- Die Serial-Befehle `TESTMON`, `TESTEVO`, `CAUGHT`, `CAUGHT <dex>`, `BATTLE`
-  und `BATTLE <dex>` sind nur in diesem Testbuild aktiv.
-- Diese Testversion darf nicht versehentlich in `web/index.html` oder
-  `web/manifest.json` eingetragen oder als öffentlicher GitHub-Pages-Installer
-  aktiviert werden; sie liegen fuer Hardwaretests in `web/dev.html` und
-  `web/manifest-local.json`.
-- `web/release-gen3.html` und `web/manifest-gen3.json` sind die lokale
-  oeffentliche Vorschau ohne Debugoberflaeche. Der einzige Sprite-Knopf sendet
-  `sprites.pak` und `sprites-gen3-update.pak` zwingend nacheinander.
+- `TAMAPOKE_LOCAL_TEST` sets the display version to `1.36.0-gen3-local`.
+- `TAMAPOKE_GEN3_RELEASE` sets the display version to `1.36.0` and allows the
+  386 dex, but does not unlock any debug commands.
+- The serial commands `TESTMON`, `TESTEVO`, `CAUGHT`, `CAUGHT <dex>`, `BATTLE`
+  and `BATTLE <dex>` are active only in this test build.
+- This test version must not accidentally be entered in `web/index.html` or
+  `web/manifest.json` or be activated as the public GitHub Pages installer;
+  it lives in `web/dev.html` and `web/manifest-local.json` for hardware tests.
+- `web/release-gen3.html` and `web/manifest-gen3.json` are the local
+  public preview without a debug UI. The single sprite button sends
+  `sprites.pak` and `sprites-gen3-update.pak` mandatorily one after another.
 
-Aktueller Git-Zustand bei Erstellung dieser Datei:
+Current Git state at the time this file was created:
 
-- Aktueller Branch: `local/full-gen3` (der Gen-2-Stand bleibt historisch auf
-  `local/full-gen2` erhalten).
+- Current branch: `local/full-gen3` (the Gen-2 state is preserved historically on
+  `local/full-gen2`).
 - `fork`: `https://github.com/ShadowEnemyx/TamaPoke.git`
 - `origin`: `https://github.com/socquique/TamaPoke.git`
-- Der Ausgangspunkt ist lokal als `3b24ea8` (`chore: save local baseline before gen2 watermark`)
-  und zusaetzlich mit dem Tag `local-baseline-before-gen2-watermark` gesichert.
-- Der lokale Featurestand ist als `feat: add gen2 starters and local watermark` gesichert;
-  der finale Stand wurde nach ausdruecklicher Nutzerfreigabe auf `fork/main`
-  veroeffentlicht.
-- Der letzte getestete Gen-2-Stand ist historisch als Tag
-  `local-full-gen2-final` markiert. Der aktuelle Arbeitsbranch ist
-  `local/full-gen3`; vor den Bugfixes liegt zusätzlich der lokale Tag
-  `local-before-gen3-bugfix-20260825`.
-- Der Arbeitsbaum enthaelt den veroeffentlichten Gen-2-, Wasserzeichen-,
-  Lokalisierungs-, Sprite- und Schrittstand. `web/index.html` und
-  `web/manifest.json` zeigen auf den oeffentlichen Build; nur `web/dev.html`
-  und `web/manifest-local.json` aktivieren die Debug-Befehle.
-- Der Hauptautor hat die grosse Expanded-PR offen gelassen und verlinkt den Fork,
-  moechte sie aber wegen Umfang, Branding und Binary-Historie nicht komplett in
-  das Basisprojekt mergen. Kleine, spaetere Einzel-PRs waeren moeglich, aber nur
-  nach Nutzerentscheidung.
+- The starting point is secured locally as `3b24ea8` (`chore: save local baseline before gen2 watermark`)
+  and additionally with the tag `local-baseline-before-gen2-watermark`.
+- The local feature state is secured as `feat: add gen2 starters and local watermark`;
+  the final state was published to `fork/main` after explicit user approval.
+- The last tested Gen-2 state is historically marked as tag
+  `local-full-gen2-final`. The current working branch is
+  `local/full-gen3`; before the bug fixes the local tag
+  `local-before-gen3-bugfix-20260825` additionally lies there.
+- The working tree contains the published Gen-2, watermark,
+  localization, sprite and step state. `web/index.html` and
+  `web/manifest.json` point to the public build; only `web/dev.html`
+  and `web/manifest-local.json` activate the debug commands.
+- The main author left the big Expanded PR open and links the fork,
+  but does not want to merge it completely into
+  the base project because of scope, branding and binary history. Small, later
+  individual PRs would be possible, but only after a user decision.
 
-## Vorhandene Funktionen
+## Existing Features
 
-### Kernspiel
+### Core Game
 
-- Ei, Starterwahl, Schluetzen, Pflege, Schlaf, Hygiene, Hunger, Freude,
-  Energie, Gewicht, Bindung, Spitznamen, Evolution, Farewell, Release und
-  Runaway.
-- Alter und Pflege laufen mit RTC auch bei ausgeschaltetem Display weiter;
-  Offline-Fortschritt ist begrenzt.
-- Pokedex/Gallery unterscheidet gezuechtete (`raised`) und gefangene (`caught`)
+- Egg, starter selection, hatching, care, sleep, hygiene, hunger, joy,
+  energy, weight, bond, nicknames, evolution, farewell, release and
+  runaway.
+- Age and care continue with the RTC even when the display is off;
+  offline progress is limited.
+- Pokedex/Gallery distinguishes bred (`raised`) and caught (`caught`)
   Pokemon.
-- Profil, Persoenlichkeit, Tagesziele, Medaillen, Fortschritt und
-  Sammler-Rang sind ueber acht Swipe-Karten erreichbar.
+- Profile, personality, daily goals, medals, progress and
+  collector rank are reachable via eight swipe cards.
 
 ### Battle
 
-- Manuelle Wild Battles ueber die Battle-Karte, zusaetzlich seltene optionale
-  Wild-Encounter-Prompts auf dem Hauptscreen.
-- Gegner-Level liegen normalerweise nahe am Pet-Level, koennen aber auch einige
-  Level darunter liegen. Wilde Legendaere sind in v1 nicht vorgesehen.
-- Typen sind in den Kaempfen sichtbar und beeinflussen Schaden moderat.
-- Aktionen: Quick, Heavy, Dodge/Counter, Rest und Run.
-  - Quick: weniger Schaden, sicherer und reduziert eingehenden Schaden.
-  - Heavy: mehr Schaden, aber der Gegner kann ausweichen/kontern.
-  - Dodge: kann Counter fuer den naechsten Angriff vorbereiten.
-  - Rest: maximal zweimal pro Kampf, heilt und gibt Guard.
-- Kein Pokemon-Tod, kein Catching bei Niederlage. Siege/Niederlagen/Streaks
-  sind persistent und geben moderate Trainingsbelohnungen.
-- Nach einem Sieg gibt es genau einen optionalen Fangversuch. Bei knapper
-  Niederlage kann es eine kleine "respect catch"-Chance geben.
-- Im Kampf zeigt ein kleiner Pokeball rechts neben der Gegner-Namenszeile an,
-  ob das gegnerische Pokemon bereits gefangen wurde. Das Symbol nutzt nur den
-  bestehenden `dexCaught`-Bitmap und aendert keine Save-Struktur.
+- Manual wild battles via the battle card, plus rare optional
+  wild encounter prompts on the main screen.
+- Opponent levels are normally close to the pet level, but can also be a few
+  levels below. Wild legendaries are not planned in v1.
+- Types are visible in battles and moderately influence damage.
+- Actions: Quick, Heavy, Dodge/Counter, Rest and Run.
+  - Quick: less damage, safer and reduces incoming damage.
+  - Heavy: more damage, but the opponent can dodge/counter.
+  - Dodge: can prepare a counter for the next attack.
+  - Rest: at most twice per battle, heals and grants guard.
+- No Pokemon death, no catching on defeat. Wins/losses/streaks
+  are persistent and grant moderate training rewards.
+- After a win there is exactly one optional catch attempt. On a narrow
+  defeat there can be a small "respect catch" chance.
+- During battle a small pokeball to the right of the opponent name line indicates
+  whether the opposing Pokemon has already been caught. The icon uses only the
+  existing `dexCaught` bitmap and does not change the save structure.
 
-### Minigames und Events
+### Minigames and Events
 
-- Play-Menue mit Ball, Catch, Memo, Clean und Type.
-- Ball ist ein schweres Reaktionsspiel mit schneller/unvorhersehbarer Bewegung.
-- Catch ist ein Reaktionsspiel mit zunehmend kurzen Zeitfenstern.
-- Memo zeigt eine Farbsequenz, die nachgetippt werden muss; die Anleitung liegt
-  optisch zwischen den Pad-Reihen und die Pads haben eigene Toene.
-- Clean und Type ergaenzen Hygiene- bzw. Typen-/Angriffs-Training.
-- Seltene, freiwillige Pet-Events (Berry, Heart, Sparkle) und seltene optionale
-  Wild-Encounter unterbrechen andere UI-Modalen nicht.
+- Play menu with Ball, Catch, Memo, Clean and Type.
+- Ball is a hard reaction game with fast/unpredictable movement.
+- Catch is a reaction game with increasingly short time windows.
+- Memo shows a color sequence that must be retyped; the instructions sit
+  visually between the pad rows and the pads have their own tones.
+- Clean and Type supplement hygiene or type/attack training.
+- Rare, voluntary pet events (Berry, Heart, Sparkle) and rare optional
+  wild encounters do not interrupt other UI modals.
 
-### Expedition und Inventar
+### Expedition and Inventory
 
-- Achte Karte `EXPEDITION` mit 15/30/60-Minuten-Touren.
-- Ein kleiner Hauptscreen-Chip erscheint nur bei aktiver Tour, abholbarem Fund
-  oder vorhandenen Items; ein Tap oeffnet direkt die Expeditions-Karte.
-- Touren laufen per RTC weiter, auch wenn das Board ausgeschaltet ist.
-- Belohnung wird beim Start festgelegt und persistiert.
-- Inventar: Trail Snack, Energy Tonic, Care Kit und Train Token. Maximal drei
-  jedes Items; Train Token oeffnet die ATK/DEF/SPD-Auswahl.
-- Der Hauptscreen-Chip oeffnet direkt Karte 8 und zeigt Tour-Restzeit,
-  abholbaren Fund oder Inventaranzahl.
+- Eighth card `EXPEDITION` with 15/30/60-minute tours.
+- A small main-screen chip appears only when a tour is active, a find is collectible
+  or items exist; a tap opens the expedition card directly.
+- Tours continue via RTC even when the board is switched off.
+- The reward is determined at the start and persisted.
+- Inventory: Trail Snack, Energy Tonic, Care Kit and Train Token. A maximum of three
+  of each item; Train Token opens the ATK/DEF/SPD selection.
+- The main-screen chip opens card 8 directly and shows tour remaining time,
+  collectible find or inventory count.
 
-### Einstellungen, Hilfe und Performance
+### Settings, Help and Performance
 
-- Settings: Sprache, Uhrzeit, vier Soundmodi und optionales Power Save.
-- Power Save ist standardmaessig aus; es reduziert Idle-Rendering und nutzt
-  Light Sleep nur bei Dimmung/Screen-Off. Pflege, RTC und Touch-Wakeup bleiben
-  aktiv.
-- Acht integrierte Hilfeseiten beschreiben Bedienung, Battle und Systeme.
-- Statische Screens nutzen Dirty-Rendering; aktive Spiele/Battle bleiben
-  regelmaessig gerendert.
+- Settings: language, time, four sound modes and optional Power Save.
+- Power Save is off by default; it reduces idle rendering and uses
+  light sleep only on dimming/screen-off. Care, RTC and touch wakeup remain
+  active.
+- Eight integrated help pages describe operation, battle and systems.
+- Static screens use dirty rendering; active games/battles remain
+  regularly rendered.
 
-### Bewegung, Tageszeit und Evolution
+### Motion, Time of Day and Evolution
 
-- `dayphase.h` liefert eine gemeinsame Morgen-/Tag-/Abend-/Nacht-Phase fuer
-  Hintergrund, Wild-Pool und Pflegeverbrauch.
-- Nachts sinkt FOOD im Wachzustand langsamer; Schlaf bleibt unveraendert.
-- QMI8658-Schuetteln gibt begrenzt JOY. Der Pedometer zaehlt Schritte auch bei
-  Screen-off; Tages-/Gesamtzaehler, Trail-Belohnungen sowie Wild-Shiny-/Fangbonus
-  bleiben in NVS. Der aktuelle Softwarezaehler nutzt gefilterte positive
-  Beschleunigungsimpulse und zaehlt auch bei USB, sobald zwei rhythmische
-  Schritte bestaetigt sind. Der rohe QMI-Pedometer bleibt als Diagnose sichtbar.
-- Evolution wird nie automatisch ausgefuehrt: Der rote CTA bleibt bei erreichtem
-  Level sichtbar und erinnert bei zu niedrigen Pflegewerten. Form behalten wird
-  auf Level 100 nach einem Spieltag erneut angeboten.
+- `dayphase.h` provides a shared morning/day/evening/night phase for
+  background, wild pool and care consumption.
+- At night FOOD drops more slowly while awake; sleep remains unchanged.
+- QMI8658 shaking grants limited JOY. The pedometer counts steps even with
+  screen-off; daily/total counters, trail rewards as well as wild shiny/catch bonus
+  remain in NVS. The current software counter uses filtered positive
+  acceleration impulses and also counts on USB once two rhythmic
+  steps are confirmed. The raw QMI pedometer remains visible as diagnostics.
+- Evolution is never executed automatically: the red CTA remains visible when the
+  level is reached and reminds when care values are too low. Keeping the form is
+  offered again at level 100 after one game day.
 
 ## Audio
 
-Audio ist vollstaendig synthetisch ueber ES8311/I2S. Es werden keine originalen
-Pokemon-Audiodateien oder ROM-Sounds benutzt.
+Audio is fully synthetic via ES8311/I2S. No original
+Pokemon audio files or ROM sounds are used.
 
-- `SOUND_FULL` / TON VIEL: UI, Minigames, Battle, Ambient und Pet-Rufe.
-- `SOUND_MED`: wichtige Care-, Battle-, Event- und Ergebnis-Sounds.
-- `SOUND_LOW`: grosse Ereignisse und Warnungen.
-- `SOUND_OFF`: stumm.
+- `SOUND_FULL` / TON VIEL: UI, minigames, battle, ambient and pet cries.
+- `SOUND_MED`: important care, battle, event and result sounds.
+- `SOUND_LOW`: big events and warnings.
+- `SOUND_OFF`: mute.
 
-Die Spezies-Rufe und alle UI-/Battle-/Minigame-Sounds sind synthetisch:
+The species cries and all UI/battle/minigame sounds are synthetic:
 
-- vier statt drei Toene, laenger und ohne Noise-Wave
-- hoehere Synthese-Lautstaerke
-- bei TON VIEL hat ein Pet-Tap Vorrang vor dem generischen Klick
-- Pet-Tap, Galerie-Detail und Wildkampf haben eigene Ruf-/SFX-Pfade
-- Soundmodi bleiben getrennt: VIEL, MITTEL, WENIG, AUS
+- four instead of three tones, longer and without a noise wave
+- higher synthesis volume
+- with TON VIEL a pet tap has priority over the generic click
+- pet tap, gallery detail and wild battle have their own cry/SFX paths
+- sound modes remain separate: VIEL, MITTEL, WENIG, AUS
 
-Die Lautstaerke und Wirkung muessen weiterhin auf echter Hardware beurteilt
-werden; Desktop-Builds koennen den ES8311-/Lautsprecherweg nicht ersetzen.
+The volume and effect still have to be judged on real hardware; desktop builds
+cannot replace the ES8311/speaker path.
 
-## Versionschronik
+## Version History
 
-Die folgenden Eintraege dokumentieren den damaligen Entwicklungsstand. Nicht
-jede Testversion wurde veroeffentlicht; Angaben zu frueheren Branches sind keine
-Beschreibung des aktuellen Arbeitsbaums. `1.36.0-gen3-local` bleibt der lokale
-Debugstand; `1.36.0` ist der veroeffentlichte debugfreie Gen-3-Release.
+The following entries document the development state at the time. Not
+every test version was published; statements about earlier branches are not a
+description of the current working tree. `1.36.0-gen3-local` remains the local
+debug state; `1.36.0` is the published debug-free Gen-3 release.
 
 1. `1.29.3-reliability`
-   - Reset von Interaktions-/Evolution-/Farewell-Sperren bei neuem Pet.
-   - Farewell/Release/Runaway wird nach einem Reset sicher abgeschlossen.
-   - Pet-Level ist auf 100 begrenzt.
-   - `millis()`-Deadlines sind rollover-sicher.
-   - Karten aktualisieren bei Pet-Ticks wieder.
-   - verbleibende UI-Literale wurden i18n-Keys zugeordnet.
-   - macOS `._*`-Sidecars innerhalb von `.git` wurden entfernt; `git fsck` ist
-     danach bis auf einen normalen dangling Commit sauber.
+   - Reset of interaction/evolution/farewell locks on a new pet.
+   - Farewell/release/runaway is completed safely after a reset.
+   - Pet level is capped at 100.
+   - `millis()` deadlines are rollover-safe.
+   - Cards update again on pet ticks.
+   - remaining UI literals were assigned to i18n keys.
+   - macOS `._*` sidecars inside `.git` were removed; `git fsck` is
+     clean afterwards except for one normal dangling commit.
 2. `1.29.4-profile-tap`
-   - Die gruennen Kreise im Profil waren Sammlerrahmen. Sie werden nicht mehr
-     ueber dem Portrait gezeichnet.
-   - Ein Tap auf das Profil-Portrait spielt jetzt den Spezies-Ruf.
+   - The green circles in the profile were collector frames. They are no longer
+     drawn over the portrait.
+   - A tap on the profile portrait now plays the species cry.
 3. `1.29.5-pet-chirps`
-   - Klarere und hoerbarere, eigene synthetische Spezies-Rufe.
+   - Clearer and more audible, dedicated synthetic species cries.
 4. `1.30-expedition-hud`
-   - Sichtbarer, runder-screen-tauglicher Einstieg zu Tour und Inventar auf
-     dem Hauptscreen. Der Chip zeigt Tour-Restzeit, abholbaren Fund oder
-     Inventaranzahl und bleibt in allen Modal-Ansichten verborgen.
+   - Visible, round-screen-suitable entry to tour and inventory on
+     the main screen. The chip shows tour remaining time, collectible find or
+     inventory count and remains hidden in all modal views.
 5. `1.30.1-caught-frames`
-   - Wildkaempfe zeigen links neben dem Gegner-HP-Balken einen kleinen
-     Pokeball, wenn dieses Pokemon bereits gefangen wurde.
-   - Profilrahmen sind wieder sichtbar: sechs Ecken-/Akzentvarianten liegen
-     hinter dem Portrait und verdecken den Sprite nicht.
+   - Wild battles show a small pokeball to the left of the opponent HP bar
+     when this Pokemon has already been caught.
+   - Profile frames are visible again: six corner/accent variants sit
+     behind the portrait and do not cover the sprite.
 6. `1.31.0-day-imu`
-   - Gemeinsame Tageszeit-API in `dayphase.h` (Morgen/Tag/Abend/Nacht).
-   - Wach nachts: FOOD -1/Tick statt -2; Schlaf unveraendert. Offline-Minuten
-     nutzen die Uhrzeit jeder Minute.
-   - Wild-Pool nach Phase: Morgen Grass/Flying/Normal/Bug, Abend Water/Flying/Fire,
-     Nacht Ghost/Poison/Bug. Tag bleibt ungefiltert. Keine Legends.
-   - Nacht-Idle laeuft seltener. Ein Morgen-Overlay einmal pro Kalendertag,
-     ohne Auto-Wecken.
-   - QMI8658: Schuetteln gibt JOY auf dem Hauptscreen (Cooldown 25 s, 8/Tag).
-     Schritte auch bei Screen-off; der damalige Build verwarf USB-Steps.
-     Der spaetere Schritt-Testbuild zaehlte auch bei USB. Serial: `IMU`, `SHAKE`,
-     `WALK n`, `STEPS`, `STATS`. Die lokale Testseite bietet zusaetzlich klickbare
-     `IMU`-/`STATS`-Diagnosebuttons; `STATS` zeigt auch `usb=0/1`.
+   - Shared time-of-day API in `dayphase.h` (morning/day/evening/night).
+   - Awake at night: FOOD -1/tick instead of -2; sleep unchanged. Offline minutes
+     use the time of day of each minute.
+   - Wild pool by phase: morning Grass/Flying/Normal/Bug, evening Water/Flying/Fire,
+     night Ghost/Poison/Bug. Day remains unfiltered. No legends.
+   - Night idle runs less often. A morning overlay once per calendar day,
+     without auto-wake.
+   - QMI8658: shaking grants JOY on the main screen (cooldown 25 s, 8/day).
+     Steps also with screen-off; the build at the time discarded USB steps.
+     The later step test build also counted on USB. Serial: `IMU`, `SHAKE`,
+     `WALK n`, `STEPS`, `STATS`. The local test page additionally offers clickable
+     `IMU`/`STATS` diagnostic buttons; `STATS` also shows `usb=0/1`.
 7. `1.31.1-shake-fix`
-   - Shake-Schwelle gesenkt (~1.45 g oder Gyro), Accel+Gyro, beide I2C-Adressen.
+   - Shake threshold lowered (~1.45 g or gyro), accel+gyro, both I2C addresses.
 8. `1.32.0-evo-cta`
-   - Roter Entwicklungs-Button bleibt, sobald das Level reicht, auch wenn ein
-     Balken unter 40 liegt. Tippen erinnert dann an die Balken.
-   - "Form behalten" auf Level 100 kommt nach einem Spieltag wieder.
+   - The red evolution button remains as soon as the level is sufficient, even if a
+     bar is below 40. Tapping then reminds about the bars.
+   - "Keep form" at level 100 comes back after one game day.
 9. `1.32.1-caught-mark`
-   - Oeffentlicher Installerstand mit Fangmarker im Wildkampf.
-   - Der Marker sitzt neben der Gegner-Namenszeile und zeigt nur bereits
-     gefangene wilde Pokemon.
+   - Public installer state with catch marker in the wild battle.
+   - The marker sits next to the opponent name line and shows only already
+     caught wild Pokemon.
 10. `1.32.1-local-test`
-   - Lokale Testvariante mit zusaetzlichen Serial-Befehlen fuer Fangmarker und
-     erzwungene Battle-Gegner. Nicht oeffentlich veroeffentlichen.
+   - Local test variant with additional serial commands for catch marker and
+     forced battle opponents. Do not publish publicly.
 11. `1.34.0-gen2-full-local`
-   - Vollstaendiger Dex #1-251 mit Gen-2-Namen, Werten, Typen, sechs Sprachen
-     und 122 Evolutionsregeln inklusive Eevee-, Baby- und Tyrogue-Verzweigungen.
-   - Eine Entwicklung benoetigt strikt drei von vier Pflegewerten ueber 40;
-     Bond, Tag/Nacht und Stat-Verhaeltnisse werden fuer passende Regeln geprueft.
-   - SpriteCollab-Normal-/Shiny-Dateien und Thumbnails fuer #161-251 sind lokal
-     gepackt; `sprites-gen2-update.pak` ist ein inkrementelles Update.
-   - `web/dev.html` bietet Auswahl und Testbuttons fuer alle 251 Arten ohne
-     Terminal; die Firmware-Befehle sind nur im lokalen Testbuild aktiv.
+   - Complete dex #1-251 with Gen-2 names, stats, types, six languages
+     and 122 evolution rules including Eevee, baby and Tyrogue branches.
+   - An evolution strictly requires three of four care values above 40;
+     bond, day/night and stat ratios are checked for matching rules.
+   - SpriteCollab normal/shiny files and thumbnails for #161-251 are packed
+     locally; `sprites-gen2-update.pak` is an incremental update.
+   - `web/dev.html` offers selection and test buttons for all 251 species without a
+     terminal; the firmware commands are active only in the local test build.
 12. `1.35.3-soft-step-local`
-   - Persistenter Tages-/Gesamt-Schrittzaehler mit 500/2.000/5.000-Trailbelohnungen
-     und Trail-Rang-Meilensteinen.
-   - Tagesschritte verbessern Wild-Shiny-Chance und Fangchance; Shiny-Wildkaempfe
-     werden angezeigt und in der Shiny-Dexregistrierung gespeichert.
-   - Der QMI-Hardwarezaehler bleibt zur Diagnose sichtbar; Schritte werden aus
-     gefilterten Beschleunigungsimpulsen erkannt. USB blockiert das Zaehlen nicht
-     mehr; Roh-, Software- und USB-Status sind ueber `STATS`/`IMU` pruefbar.
+   - Persistent daily/total step counter with 500/2,000/5,000 trail rewards
+     and trail rank milestones.
+   - Daily steps improve the wild shiny chance and the catch chance; shiny wild
+     battles are shown and stored in the shiny dex registration.
+   - The QMI hardware counter remains visible for diagnostics; steps are detected from
+     filtered acceleration impulses. USB no longer blocks counting;
+     raw, software and USB status can be checked via `STATS`/`IMU`.
 13. `1.36.0-gen3-local`
-   - Lokaler Dex und Spritebestand #1-386 mit Hoenn-Startern, allen Gen-3-Arten,
-     sechs Sprachen und Gen-3-Evolutionsregeln.
-   - Nur `tools/build_web_local.sh` erzeugt diesen Kandidaten. Der oeffentliche
-     Gen-2-Build bleibt unveraendert und wird aus einem gepinnten Commit gebaut.
-14. `1.36.0` Release-Kandidat
-   - Oeffentliches Gen-3-Buildprofil mit 386 Arten, aber ohne lokale Testbefehle.
-   - Lokale Vorschau verlangt einen einzigen vollstaendigen Sprite-Schritt, der
-     das Gen-1/2- und das Gen-3-Paket nacheinander uebertraegt.
-   - Noch nicht auf GitHub Pages aktiviert und noch kein GitHub-Release.
+   - Local dex and sprite stock #1-386 with Hoenn starters, all Gen-3 species,
+     six languages and Gen-3 evolution rules.
+   - Only `tools/build_web_local.sh` produces this candidate. The public
+     Gen-2 build remains unchanged and is built from a pinned commit.
+14. `1.36.0` release candidate
+   - Public Gen-3 build profile with 386 species, but without local test commands.
+   - The local preview requires a single complete sprite step that
+     transfers the Gen-1/2 and the Gen-3 pack one after another.
+   - Not yet activated on GitHub Pages and not yet a GitHub release.
 
-## Architektur und wichtige Dateien
+## Architecture and Important Files
 
-- `TamaPoke.ino`: UI, Touch-Routing, Rendern, Karten, Minigames, Battle-Screen,
-  Settings, Hilfe, lokaler Laufzeit-Zustand, IMU-Poll und Morgen-Overlay.
-- `dayphase.h`: Stunde, Phase und visuelle Nacht aus RTC-Epoch.
-- `imu.h` / `imu.cpp`: QMI8658 Poll, Shake-Kante, Pedometer-Delta.
-- `pet.h` / `pet.cpp`: persistentes Pet-Modell, NVS Save/Load, Pflege,
-  Progression, Pokedex, Catching, Events, Expedition und Items.
-- `battle.h` / `battle.cpp`: testbare Battle-Logik und Typ-Multiplikatoren.
-- `audio.h` / `audio.cpp`: Sound-Queue, ES8311, SFX und Spezies-Rufe.
-- `species_chirp.h` / `species_chirp.cpp`: pro Dexnummer generierte,
-  rechtlich unbedenkliche Syntheseprofile.
-- `i18n.h` / `i18n.cpp`: alle sichtbaren UI-Texte und Dex-Namen.
-- `time_utils.h`: rollover-sichere `deadlineActive`, `deadlineReached` und
-  `deadlineRemaining` fuer `millis()`-Timer.
-- `tests/pet_tests.cpp` und `tests/battle_tests.cpp`: native Regressionstests.
-- `tools/build_web.sh`: erzeugt die vier separaten oeffentlichen Gen-3-
-  Installer-Binaries.
-- `tools/build_web_gen3.sh`: erzeugt und validiert den debugfreien
-  `1.36.0`-Release ohne den lokalen Debugbuild zu verwenden.
-- `web/manifest.json` und `web/index.html`: Web-Installer. Die Parts werden
-  getrennt geflasht, damit NVS/Save bei Updates erhalten bleibt.
-- `web/dev.html` und `web/manifest-local.json`: lokaler Testinstaller, nicht fuer
-  den oeffentlichen GitHub-Pages-Flow.
-- `web/release-gen3.html` und `web/manifest-gen3.json`: lokale Vorschau des
-  oeffentlichen Gen-3-Installers ohne Testknoepfe.
+- `TamaPoke.ino`: UI, touch routing, rendering, cards, minigames, battle screen,
+  settings, help, local runtime state, IMU poll and morning overlay.
+- `dayphase.h`: hour, phase and visual night from the RTC epoch.
+- `imu.h` / `imu.cpp`: QMI8658 poll, shake edge, pedometer delta.
+- `pet.h` / `pet.cpp`: persistent pet model, NVS save/load, care,
+  progression, pokedex, catching, events, expedition and items.
+- `battle.h` / `battle.cpp`: testable battle logic and type multipliers.
+- `audio.h` / `audio.cpp`: sound queue, ES8311, SFX and species cries.
+- `species_chirp.h` / `species_chirp.cpp`: legally unproblematic synthesis profiles
+  generated per dex number.
+- `i18n.h` / `i18n.cpp`: all visible UI texts and dex names.
+- `time_utils.h`: rollover-safe `deadlineActive`, `deadlineReached` and
+  `deadlineRemaining` for `millis()` timers.
+- `tests/pet_tests.cpp` and `tests/battle_tests.cpp`: native regression tests.
+- `tools/build_web.sh`: produces the four separate public Gen-3
+  installer binaries.
+- `tools/build_web_gen3.sh`: produces and validates the debug-free
+  `1.36.0` release without using the local debug build.
+- `web/manifest.json` and `web/index.html`: web installer. The parts are
+  flashed separately so that NVS/save is preserved during updates.
+- `web/dev.html` and `web/manifest-local.json`: local test installer, not for
+  the public GitHub Pages flow.
+- `web/release-gen3.html` and `web/manifest-gen3.json`: local preview of the
+  public Gen-3 installer without test buttons.
 
-## Testen und lokales Flashen
+## Testing and Local Flashing
 
-Im Repository-Ordner (`TamaPoke`) ausfuehren:
+Run in the repository folder (`TamaPoke`):
 
 ```bash
 cd tests && make clean && make test
@@ -334,15 +331,15 @@ cd .. && bash tools/build_web.sh
 python3 -m http.server 8000 --directory web
 ```
 
-Danach auf dem Mac Chrome oder Edge oeffnen:
+Afterwards open Chrome or Edge on the Mac:
 
 ```text
 http://127.0.0.1:8000/?v=1.36.0
 ```
 
-Waveshare per USB verbinden und im Installer **Erase device deaktiviert lassen**.
-Der lokale Server muss waehrend des Flashens weiterlaufen. Der aktuelle
-Web-Installer erwartet diese vier Dateien:
+Connect the Waveshare via USB and **leave Erase device disabled** in the installer.
+The local server must keep running during flashing. The current
+web installer expects these four files:
 
 ```text
 web/firmware/tamapoke-1.36.0-bootloader.bin
@@ -351,71 +348,70 @@ web/firmware/tamapoke-1.36.0-boot_app0.bin
 web/firmware/tamapoke-1.36.0-app.bin
 ```
 
-### Lokaler Testinstaller
+### Local Test Installer
 
-Fuer Hardwaretests wird der abgesicherte lokale Buildweg verwendet:
+For hardware tests the safeguarded local build path is used:
 
 ```bash
 bash tools/build_web_local.sh
-# oder ohne Aenderung bestehender Installerdateien:
+# or without changing existing installer files:
 bash tools/build_web_local.sh --check
 ```
 
-Die vier erzeugten Parts muessen unter den in `web/manifest-local.json`
-genannten `1.36.0-gen3-local`-Namen liegen. Die Browserinstaller-Parts
-werden fuer reproduzierbare lokale und oeffentliche Tests versioniert. Danach:
+The four generated parts must be located under the `1.36.0-gen3-local` names
+given in `web/manifest-local.json`. The browser installer parts
+are versioned for reproducible local and public tests. Afterwards:
 
 ```bash
 python3 -m http.server 8000 --directory web
 ```
 
-Im Browser `http://127.0.0.1:8000/dev.html` oeffnen. Auch beim lokalen
-Testupdate `Erase device` deaktiviert lassen.
+In the browser open `http://127.0.0.1:8000/dev.html`. Also with the local
+test update leave `Erase device` disabled.
 
-### Oeffentliche Gen-3-Release-Referenz
+### Public Gen-3 Release Reference
 
 ```bash
 bash tools/build_web_gen3.sh
 python3 -m http.server 8000 --directory web
 ```
 
-Im Browser `http://127.0.0.1:8000/release-gen3.html` oeffnen. Diese Seite hat
-keine Debugbefehle und bietet genau einen verpflichtenden Komplett-Spriteknopf.
-Die oeffentliche Seite `web/index.html` hat denselben normalen Ablauf.
+In the browser open `http://127.0.0.1:8000/release-gen3.html`. This page has
+no debug commands and offers exactly one mandatory full sprite button.
+The public page `web/index.html` has the same normal flow.
 
-## Verifikation vor einer eventuellen Veroeffentlichung
+## Verification Before Any Publication
 
 1. `cd tests && make clean && make test`
 2. `bash tools/build_web.sh --check`, `bash tools/build_web_local.sh --check`
-   und `bash tools/build_web_gen3.sh --check`
+   and `bash tools/build_web_gen3.sh --check`
 3. `git diff --check`
-4. Hardware-Smoke-Test ohne Erase:
-   - Save/Pet bleibt erhalten.
-   - Hauptscreen-Pet mehrfach antippen: Ruf muss klar hoerbar sein.
-   - Profil oeffnen: sechs sichtbare Ecken-/Akzentrahmen durchschalten; Portrait
-     antippen pruefen.
-   - Battle, Play-Menue, Memo, Expedition, Schlaf, PWR-Wakeup und Settings
-     kurz pruefen.
-   - Im lokalen Testbuild `TESTMON`, `TESTEVO`, `CAUGHT <dex>` und `BATTLE <dex>` pruefen; im
-     oeffentlichen Build sind diese Debug-Befehle absichtlich nicht vorhanden.
-5. Erst nach ausdruecklicher Nutzerfreigabe committen/pushen/veroeffentlichen.
+4. Hardware smoke test without erase:
+   - Save/pet is preserved.
+   - Tap the main-screen pet several times: the cry must be clearly audible.
+   - Open the profile: cycle through six visible corner/accent frames; check
+     tapping the portrait.
+   - Briefly check battle, play menu, memo, expedition, sleep, PWR wakeup and
+     settings.
+   - In the local test build check `TESTMON`, `TESTEVO`, `CAUGHT <dex>` and
+     `BATTLE <dex>`; in the public build these debug commands are deliberately
+     not present.
+5. Only commit/push/publish after explicit user approval.
 
-## Offene Themen und sichere naechste Schritte
+## Open Topics and Safe Next Steps
 
-- Der Besitzer hat lokales Flashen, Gen-3-Sprites und reales Schrittzaehlen
-  grundsaetzlich auf Hardware bestaetigt. Fuer die Release-Freigabe verbleibt
-  der erweiterte Test: Serial `IMU`, `STEPS`,
-  `WALK n`, Software-Schritte bei Screen-off und USB, Trail-Belohnungen,
-  Wild-Shiny-Fang, Nacht-FOOD, Morgen-Overlay,
-  Schlaf bleibt beim Schuetteln. Schwellen nach der Session nachziehen.
-- Die synthetischen Pet-Rufe und die sechs Profilrahmen auf dem echten Waveshare
-  visuell/akustisch pruefen.
-- Nach neuem Nutzerfeedback erneut gezielte Bug-Hunts machen. Bei Reviews immer
-  zuerst echte Fehler, Save-Risiken und Touch-Hitboxen pruefen.
-- Alle UI-Aenderungen auf dem runden Screen auf abgeschnittenen Text und
-  Fehleingaben pruefen.
-- Keine neue grosse Battle-Funktion ohne Nutzerentscheidung; zuerst Marker,
-  Rahmen, Touch-Hitboxen und Save-Sicherheit auf Hardware bestaetigen.
-- Historische Firmware-Binaries nicht erneut massenhaft in Git aufnehmen. Nur
-  die vier aktuellen Installer-Parts einer freigegebenen Version gezielt
-  veroeffentlichen.
+- The owner has basically confirmed local flashing, Gen-3 sprites and real step
+  counting on hardware. For release approval the extended test remains: serial
+  `IMU`, `STEPS`, `WALK n`, software steps with screen-off and USB, trail
+  rewards, wild shiny catch, night FOOD, morning overlay,
+  sleep remains on shaking. Adjust thresholds after the session.
+- Check the synthetic pet cries and the six profile frames visually/acoustically
+  on the real Waveshare.
+- Do targeted bug hunts again after new user feedback. In reviews always
+  check real bugs, save risks and touch hitboxes first.
+- Check all UI changes on the round screen for truncated text and
+  misinputs.
+- No new big battle feature without a user decision; first confirm markers,
+  frames, touch hitboxes and save safety on hardware.
+- Do not bulk-add historical firmware binaries to Git again. Only
+  publish the four current installer parts of an approved version in a targeted way.

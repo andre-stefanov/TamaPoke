@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Fuente unica de datos de la Pokedex para TamaPoke.
+"""Single source of Pokedex data for TamaPoke.
 
-Cada entrada: (num, slug, nombre_pantalla, tipo, evoluciona_a, nivel)
-- slug: nombre en minusculas de la especie (identificador interno)
-- nombre_pantalla: ASCII en mayusculas (la fuente GFX no tiene acentos)
-- tipo: clave de TYPE_ACCENTS (color del nombre en la UI)
-- evoluciona_a: numero de dex (0 = forma final); niveles gen 1 reales,
-  piedras ~30 y por intercambio ~40 convertidos a nivel. Eevee (133) se
-  ramifica en el codigo del juego (134/135/136 al azar).
+Each entry: (num, slug, display name, type, evolves_to, level)
+- slug: lowercase species name (internal identifier)
+- display name: uppercase ASCII (the GFX font has no accents)
+- type: key of TYPE_ACCENTS (name color in the UI)
+- evolves_to: Dex number (0 = final form); real Gen 1 levels,
+  stones ~30 and trade ~40 converted to a level. Eevee (133) is
+  branched in the game code (134/135/136 at random).
 """
 
 TYPE_ACCENTS = {
@@ -29,9 +29,9 @@ TYPE_ACCENTS = {
     'acero':     '#7f8c9a',
 }
 
-# Tipos de combate actuales para las especies incluidas.
-# Fuente verificada: PokeAPI /pokemon/{id}. La UI sigue usando `tipo` como
-# acento/bioma primario; estos pares se usan solo para el multiplicador battle.
+# Current battle types for the included species.
+# Verified source: PokeAPI /pokemon/{id}. The UI still uses the main type as
+# the accent/biome; these pairs are only used for the battle multiplier.
 BATTLE_TYPES = {
     1: ('grass', 'poison'), 2: ('grass', 'poison'), 3: ('grass', 'poison'),
     4: ('fire', None), 5: ('fire', None), 6: ('fire', 'flying'),
@@ -295,9 +295,9 @@ BATTLE_TYPES = {
     386: ('psychic', None),
 }
 
-# Nombres localizados para la UI en el orden de Lang: ES, EN, FR, DE, IT, PT.
-# Fuente: PokeAPI pokemon-species/{id}; PT usa los nombres internacionales EN.
-# Normalizados a ASCII/mayusculas porque la fuente del firmware no tiene acentos.
+# Localized names for the UI in Lang order: ES, EN, FR, DE, IT, PT.
+# Source: PokeAPI pokemon-species/{id}; PT uses the international EN names.
+# Normalized to ASCII/uppercase because the firmware font has no accents.
 LOCALIZED_NAMES = {
     1: ('BULBASAUR', 'BULBASAUR', 'BULBIZARRE', 'BISASAM', 'BULBASAUR', 'BULBASAUR'),
     2: ('IVYSAUR', 'IVYSAUR', 'HERBIZARRE', 'BISAKNOSP', 'IVYSAUR', 'IVYSAUR'),
@@ -687,7 +687,7 @@ LOCALIZED_NAMES = {
     386: ('DEOXYS', 'DEOXYS', 'DEOXYS', 'DEOXYS', 'DEOXYS', 'DEOXYS'),
 }
 
-# num, slug, display, tipo, evolucionaA, nivel
+# num, slug, display, type, evolvesTo, level
 DEX = [
     (1, 'bulbasaur', 'BULBASAUR', 'planta', 2, 16),
     (2, 'ivysaur', 'IVYSAUR', 'planta', 3, 32),
@@ -821,7 +821,7 @@ DEX = [
     (130, 'gyarados', 'GYARADOS', 'agua', 0, 0),
     (131, 'lapras', 'LAPRAS', 'agua', 0, 0),
     (132, 'ditto', 'DITTO', 'normal', 0, 0),
-    (133, 'eevee', 'EEVEE', 'normal', 134, 30),  # rama al azar en el juego
+    (133, 'eevee', 'EEVEE', 'normal', 134, 30),  # random branch in the game
     (134, 'vaporeon', 'VAPOREON', 'agua', 0, 0),
     (135, 'jolteon', 'JOLTEON', 'electrico', 0, 0),
     (136, 'flareon', 'FLAREON', 'fuego', 0, 0),
@@ -1077,10 +1077,10 @@ DEX = [
     (386, 'deoxys', 'DEOXYS', 'psiquico', 0, 0),
 ]
 
-# el primer huevo de la partida siempre es un inicial clasico
+# the first egg of the game is always a classic starter
 CLASSIC = [1, 4, 7, 25, 133]
 
-# rarezas de las formas base (lo que no este aqui y sea base = comun)
+# rarities of the base forms (anything not listed here and base = common)
 RARE = {58, 77, 83, 88, 95, 106, 107, 108, 111, 113, 114, 115, 122, 123,
         124, 125, 126, 127, 128, 131, 132, 137, 138, 140, 142, 143, 147,
         175, 193, 198, 200, 201, 206, 213, 214, 215, 222, 225, 226, 227,
